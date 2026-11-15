@@ -9,9 +9,12 @@ const {
   updateVendorInventory,
 } = require("../controllers/vendorInventoryController");
 
-router.post("/", createVendorInventory);
-router.get("/", getAllVendorInventory);
-router.get("/part/:partId", getVendorInventoryByPart);
-router.put("/:id", updateVendorInventory);
+const protect = require("../middleware/authMiddleware");
+const authorize = require("../middleware/roleMiddleware");
+router.post("/", protect, authorize("Manager"), createVendorInventory);
+router.get("/", protect, getAllVendorInventory);
+router.get("/part/:partId", protect, getVendorInventoryByPart);
+router.put("/:id", protect, authorize("Manager"), updateVendorInventory);
+
 
 module.exports = router;

@@ -7,9 +7,11 @@ const {
   getAllVendors,
   getVendorById,
 } = require("../controllers/vendorController");
+const protect = require("../middleware/authMiddleware");
+const authorize = require("../middleware/roleMiddleware");
+router.post("/", protect, authorize("Manager"), createVendor);
+router.get("/", protect, getAllVendors);
+router.get("/:id", protect, getVendorById);
 
-router.post("/", createVendor);
-router.get("/", getAllVendors);
-router.get("/:id", getVendorById);
 
 module.exports = router;
