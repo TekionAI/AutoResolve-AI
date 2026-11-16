@@ -1,3 +1,4 @@
+
 const Schedule = require("../models/Schedule");
 const Technician = require("../models/Technician");
 const ServiceBay = require("../models/ServiceBay");
@@ -9,6 +10,15 @@ const matchesCapability = (capabilities, requiredServices) => {
         capability.toLowerCase() === service.toLowerCase()
     )
   );
+};
+
+const countMatchingSkills = (skills, requiredServices) => {
+  return requiredServices.filter((service) =>
+    skills.some(
+      (skill) =>
+        skill.toLowerCase() === service.toLowerCase()
+    )
+  ).length;
 };
 
 const getRequiredServices = (repairOrder) => {
@@ -67,7 +77,6 @@ const findAvailableSlot = (
       Math.max(now.getTime(), shiftStartTime.getTime())
     );
 
-    // Round the candidate start up to the next 15-minute interval.
     const minutes = candidateStart.getMinutes();
     const remainder = minutes % 15;
 
@@ -119,7 +128,8 @@ const findAvailableSlot = (
 };
 
 const findBestSchedule = async (repairOrder) => {
-  const dealershipId = repairOrder.dealership._id || repairOrder.dealership;
+  const dealershipId =
+    repairOrder.dealership._id || repairOrder.dealership;
 
   const requiredServices = getRequiredServices(repairOrder);
 
@@ -147,15 +157,21 @@ const findBestSchedule = async (repairOrder) => {
   const candidates = [];
 
   for (const technician of technicians) {
-    if (
-      !matchesCapability(technician.skills, requiredServices)
-    ) {
+    const skillMatchCount = countMatchingSkills(
+      technician.skills || [],
+      requiredServices
+    );
+
+    if (skillMatchCount === 0) {
       continue;
     }
 
     for (const bay of serviceBays) {
       if (
-        !matchesCapability(bay.supportedServices, requiredServices)
+        !matchesCapability(
+          bay.supportedServices || [],
+          requiredServices
+        )
       ) {
         continue;
       }
@@ -182,16 +198,23 @@ const findBestSchedule = async (repairOrder) => {
         candidates.push({
           technician,
           bay,
+          skillMatchCount,
           ...slot,
         });
       }
     }
   }
 
-  candidates.sort(
-    (a, b) =>
-      a.scheduledStart.getTime() - b.scheduledStart.getTime()
-  );
+  candidates.sort((a, b) => {
+    if (b.skillMatchCount !== a.skillMatchCount) {
+      return b.skillMatchCount - a.skillMatchCount;
+    }
+
+    return (
+      a.scheduledStart.getTime() -
+      b.scheduledStart.getTime()
+    );
+  });
 
   return candidates[0] || null;
 };

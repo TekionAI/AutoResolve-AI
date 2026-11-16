@@ -48,7 +48,14 @@ const optimizeSchedule = async (req, res) => {
         }
       );
 
-      savedRecommendations.push(recommendation);
+      const populatedRecommendation = await recommendation.populate([
+  { path: "repairOrder" },
+  { path: "proposedSchedule.technician" },
+  { path: "proposedSchedule.serviceBay" },
+  { path: "proposedSchedule.repairOrderToMoveForward" },
+]);
+
+savedRecommendations.push(populatedRecommendation);
     }
 
     return res.status(200).json({

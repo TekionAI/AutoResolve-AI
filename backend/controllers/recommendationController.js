@@ -106,6 +106,29 @@ const generateSourcingRecommendations = async (req, res) => {
 
       const recommendationData = {
         recommendationType: "Parts Sourcing",
+              sourcingOptions: sourcingResult.options.map((source) => ({
+        sourceType: source.sourceType,
+
+        dealership:
+          source.sourceType === "Sister Dealership"
+            ? source.sourceId
+            : null,
+
+        vendor:
+          source.sourceType === "Vendor"
+            ? source.sourceId
+            : null,
+
+        sourceName: source.sourceName,
+        location: source.location,
+        availableQuantity: source.availableQuantity,
+        quantity: shortageQuantity,
+        unitPrice: source.unitPrice,
+        estimatedDeliveryHours: source.estimatedDeliveryHours,
+        reliabilityScore: source.reliabilityScore,
+        score: source.score,
+        canFulfilEntireQuantity: source.canFulfilEntireQuantity,
+      })),
 
         shortageDetails: {
           part: part._id,
@@ -163,6 +186,7 @@ const generateSourcingRecommendations = async (req, res) => {
   }
 };
 
+
 const getAllRecommendations = async (req, res) => {
   try {
     const recommendations = await Recommendation.find()
@@ -170,6 +194,9 @@ const getAllRecommendations = async (req, res) => {
       .populate("shortageDetails.part")
       .populate("proposedSource.dealership")
       .populate("proposedSource.vendor")
+      .populate("proposedSchedule.technician")
+      .populate("proposedSchedule.serviceBay")
+      .populate("proposedSchedule.repairOrderToMoveForward")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -184,6 +211,7 @@ const getAllRecommendations = async (req, res) => {
     });
   }
 };
+
 
 module.exports = {
   generateSourcingRecommendations,

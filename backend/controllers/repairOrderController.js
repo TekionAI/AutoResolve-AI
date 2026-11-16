@@ -24,11 +24,28 @@ const createRepairOrder = async (req, res) => {
 // Get all repair orders
 const getAllRepairOrders = async (req, res) => {
   try {
-    const repairOrders = await RepairOrder.find()
+    let filter = {};
+
+    if (req.user.role === "Technician") {
+      if (!req.user.technician) {
+        return res.status(403).json({
+          success: false,
+          message: "No technician profile is linked to this account",
+        });
+      }
+
+      filter = {
+        assignedTechnician: req.user.technician,
+        dealership: req.user.dealership,
+      };
+    }
+
+    const repairOrders = await RepairOrder.find(filter)
       .populate("dealership", "name dealershipCode")
       .populate("requiredParts.part", "partNumber name unitPrice")
       .populate("assignedTechnician", "name employeeId")
-      .populate("assignedBay", "bayNumber bayType");
+      .populate("assignedBay", "bayNumber bayType")
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -46,7 +63,21 @@ const getAllRepairOrders = async (req, res) => {
 // Get repair order by ID
 const getRepairOrderById = async (req, res) => {
   try {
-    const repairOrder = await RepairOrder.findById(req.params.id)
+    let filter = { _id: req.params.id };
+
+    if (req.user.role === "Technician") {
+      if (!req.user.technician) {
+        return res.status(403).json({
+          success: false,
+          message: "No technician profile is linked to this account",
+        });
+      }
+
+      filter.assignedTechnician = req.user.technician;
+      filter.dealership = req.user.dealership;
+    }
+
+    const repairOrder = await RepairOrder.findOne(filter)
       .populate("dealership", "name dealershipCode")
       .populate("requiredParts.part", "partNumber name unitPrice")
       .populate("assignedTechnician", "name employeeId")

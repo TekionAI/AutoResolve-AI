@@ -57,6 +57,63 @@ const recommendationSchema = new mongoose.Schema(
         default: null,
       },
     },
+
+    sourcingOptions: [
+      {
+        sourceType: {
+          type: String,
+          enum: ["Sister Dealership", "Vendor"],
+          required: true,
+        },
+        dealership: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Dealership",
+          default: null,
+        },
+        vendor: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Vendor",
+          default: null,
+        },
+        sourceName: {
+          type: String,
+          required: true,
+        },
+        location: {
+          type: String,
+          default: "",
+        },
+        availableQuantity: {
+          type: Number,
+          default: 0,
+        },
+        quantity: {
+          type: Number,
+          default: 0,
+        },
+        unitPrice: {
+          type: Number,
+          default: 0,
+        },
+        estimatedDeliveryHours: {
+          type: Number,
+          default: 0,
+        },
+        reliabilityScore: {
+          type: Number,
+          default: 0,
+        },
+        score: {
+          type: Number,
+          default: 0,
+        },
+        canFulfilEntireQuantity: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
+
     
 proposedSchedule: {
   repairOrderToMoveForward: {
