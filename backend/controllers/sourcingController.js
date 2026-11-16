@@ -1,5 +1,8 @@
+
 const RepairOrder = require("../models/RepairOrder");
 const Inventory = require("../models/Inventory");
+const Notification = require("../models/Notification");
+const User = require("../models/User");
 const { findSourceOptions } = require("../services/sourcingService");
 
 const getSourcingOptions = async (req, res) => {
@@ -65,6 +68,49 @@ const getSourcingOptions = async (req, res) => {
         message: "Parts shortage detected",
         sourcing: sourcing.options,
       });
+    }
+
+    // Create notifications when a parts shortage is detected
+    const shortages = results.filter(
+      (item) => item.shortageQuantity > 0
+    );
+
+    if (shortages.length > 0) {
+      try {
+        const recipients = await User.find({
+          dealership: repairOrder.dealership,
+          role: { $in: ["Manager", "Service Advisor"] },
+          isActive: true,
+        }).select("_id");
+
+        for (const recipient of recipients) {
+          const existingNotification = await Notification.findOne({
+            recipient: recipient._id,
+            type: "PARTS_SHORTAGE",
+            "relatedEntity.entityType": "RepairOrder",
+            "relatedEntity.entityId": repairOrder._id,
+          });
+
+          if (!existingNotification) {
+            await Notification.create({
+              recipient: recipient._id,
+              dealership: repairOrder.dealership,
+              type: "PARTS_SHORTAGE",
+              title: "Parts Shortage Detected",
+              message: `A parts shortage has been detected for repair order ${repairOrder.roNumber}. ${shortages.length} required part(s) have insufficient local stock.`,
+              relatedEntity: {
+                entityType: "RepairOrder",
+                entityId: repairOrder._id,
+              },
+            });
+          }
+        }
+      } catch (notificationError) {
+        console.error(
+          "Parts shortage notification error:",
+          notificationError.message
+        );
+      }
     }
 
     res.status(200).json({

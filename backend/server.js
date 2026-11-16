@@ -21,6 +21,7 @@ const technicianRoutes = require("./routes/technicianRoutes");
 const serviceBayRoutes = require("./routes/serviceBayRoutes");
 const scheduleRoutes = require("./routes/scheduleRoutes");
 const authRoutes = require("./routes/authRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use("/api/technicians", technicianRoutes);
 app.use("/api/service-bays", serviceBayRoutes);
 app.use("/api/schedules", scheduleRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({

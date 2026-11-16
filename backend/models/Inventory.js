@@ -24,6 +24,20 @@ const inventorySchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    reservations: [
+      {
+        repairOrder: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "RepairOrder",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+      },
+    ],
     reorderLevel: {
       type: Number,
       default: 5,
