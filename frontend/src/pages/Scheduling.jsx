@@ -9,7 +9,6 @@ import {
   Clock,
   User,
   Wrench,
-  AlertTriangle,
   History,
   ChevronDown
 } from 'lucide-react';
@@ -19,7 +18,6 @@ import { scheduleService } from '../services/scheduleService';
 import { recommendationService } from '../services/recommendationService';
 import { repairOrderService } from '../services/repairOrderService';
 import Loading from '../components/common/Loading';
-
 
 const DEALERSHIP_ID = '6af9e85fa9791b0ffed2cabf';
 
@@ -70,9 +68,9 @@ export default function Scheduling() {
   );
 
   const loadData = async (showLoading = false) => {
-  if (showLoading) {
-    setLoading(true);
-  }
+    if (showLoading) {
+      setLoading(true);
+    }
 
     try {
       const [scheduleRes, recommendationRes, repairOrderRes] =
@@ -100,16 +98,16 @@ export default function Scheduling() {
       );
     } finally {
       if (showLoading) {
-  setLoading(false);
-}
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-  loadData(true);
-}, []);
+    loadData(true);
+  }, []);
 
-useAutoRefresh(loadData);
+  useAutoRefresh(loadData);
 
   const runOptimization = async () => {
     setOptimizing(true);
@@ -171,9 +169,9 @@ useAutoRefresh(loadData);
 
     try {
       await scheduleService.applyRecommendation(id);
-toast.success('Schedule applied successfully');
-await loadData();
-notifyDataChanged();
+      toast.success('Schedule applied successfully');
+      await loadData();
+      notifyDataChanged();
     } catch (error) {
       toast.error(
         error.response?.data?.message || 'Unable to apply recommendation'
@@ -187,8 +185,6 @@ notifyDataChanged();
     return <Loading />;
   }
 
-  // Identify recommendations whose blocked repair order
-  // is still genuinely waiting for parts.
   const isStillBlocked = (item) => {
     const blockedRO = repairOrderMap[getId(item.repairOrder)];
 
@@ -264,20 +260,22 @@ notifyDataChanged();
       : proposed.proposedEnd;
 
     return (
-      <div key={item._id} className="p-5 space-y-4">
-
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div
+        key={item._id}
+        className="space-y-5 p-5 transition-colors hover:bg-dark-700/10"
+      >
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-white font-semibold">
+            <p className="font-semibold text-white">
               Schedule Optimization
             </p>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="mt-1 text-xs text-slate-500">
               Recommendation ID: {item._id}
             </p>
           </div>
 
           <span
-            className={`px-3 py-1 rounded-full border text-xs font-semibold w-fit ${getStatusStyle(
+            className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${getStatusStyle(
               isOutdated ? 'Outdated' : item.status
             )}`}
           >
@@ -286,7 +284,7 @@ notifyDataChanged();
         </div>
 
         {isOutdated && (
-          <div className="bg-slate-500/5 border border-slate-500/20 rounded-lg p-3">
+          <div className="rounded-lg border border-slate-500/20 bg-slate-500/5 p-3">
             <p className="text-sm text-slate-400">
               This recommendation is no longer actionable because the
               original repair order is no longer waiting for parts.
@@ -294,118 +292,114 @@ notifyDataChanged();
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-          <div className="bg-dark-900 rounded-lg p-4 border border-red-500/20">
-            <p className="text-xs text-red-400 font-semibold mb-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="rounded-xl border border-red-500/20 bg-dark-900 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-red-400">
               {isApplied || isOutdated
-                ? 'ORIGINAL BLOCKED REPAIR ORDER'
-                : 'BLOCKED REPAIR ORDER'}
+                ? 'Original Blocked Repair Order'
+                : 'Blocked Repair Order'}
             </p>
 
-            <h3 className="text-white font-bold">
+            <h3 className="font-bold text-white">
               {blockedRO?.roNumber || 'Repair order'}
             </h3>
 
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="mt-1 text-sm text-slate-400">
               {blockedRO?.customer?.name || 'Customer details unavailable'}
             </p>
 
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="mt-2 text-xs text-slate-500">
               Current status: {blockedRO?.status || 'Unavailable'}
             </p>
           </div>
 
-          <div className="bg-dark-900 rounded-lg p-4 border border-emerald-500/20">
-            <p className="text-xs text-emerald-400 font-semibold mb-2">
-              {isApplied ? 'SCHEDULED REPAIR ORDER' : 'READY TO MOVE FORWARD'}
+          <div className="rounded-xl border border-emerald-500/20 bg-dark-900 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">
+              {isApplied ? 'Scheduled Repair Order' : 'Ready to Move Forward'}
             </p>
 
-            <h3 className="text-white font-bold">
+            <h3 className="font-bold text-white">
               {readyRO?.roNumber || 'Repair order'}
             </h3>
 
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="mt-1 text-sm text-slate-400">
               {readyRO?.customer?.name || 'Customer details unavailable'}
             </p>
 
-            <p className="text-xs text-slate-500 mt-2">
+            <p className="mt-2 text-xs text-slate-500">
               {readyRO?.priority || 'Priority unavailable'} Priority
             </p>
           </div>
-
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-
-          <div className="bg-dark-900 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-slate-400 text-xs">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-dark-700 bg-dark-900/60 p-4">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
               <User size={15} />
               Technician
             </div>
 
-            <p className="text-white text-sm font-medium mt-2 break-all">
+            <p className="mt-2 break-all text-sm font-medium text-white">
               {typeof proposed.technician === 'object'
                 ? proposed.technician?.name || technicianId
                 : technicianId || 'Not available'}
             </p>
           </div>
 
-          <div className="bg-dark-900 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-slate-400 text-xs">
+          <div className="rounded-lg border border-dark-700 bg-dark-900/60 p-4">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
               <Wrench size={15} />
               Service Bay
             </div>
 
-            <p className="text-white text-sm font-medium mt-2 break-all">
+            <p className="mt-2 break-all text-sm font-medium text-white">
               {typeof proposed.serviceBay === 'object'
                 ? proposed.serviceBay?.bayNumber || bayId
                 : bayId || 'Not available'}
             </p>
           </div>
 
-          <div className="bg-dark-900 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-slate-400 text-xs">
+          <div className="rounded-lg border border-dark-700 bg-dark-900/60 p-4">
+            <div className="flex items-center gap-2 text-xs text-slate-400">
               <Clock size={15} />
               {isApplied ? 'Actual Start' : 'Proposed Start'}
             </div>
 
-            <p className="text-white text-sm font-medium mt-2">
+            <p className="mt-2 text-sm font-medium text-white">
               {formatDateTime(displayedStart)}
             </p>
           </div>
-
         </div>
 
-        <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-4">
-          <p className="text-xs text-blue-400 font-semibold mb-2">
-            AI EXPLANATION
+        <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-400">
+            AI Explanation
           </p>
 
-          <p className="text-sm text-slate-300">
+          <p className="text-sm leading-relaxed text-slate-300">
             {item.explanation || 'No explanation provided.'}
           </p>
 
-          <p className="text-xs text-slate-400 mt-3">
+          <p className="mt-3 text-xs text-slate-400">
             {isApplied ? 'Actual completion' : 'Proposed completion'}:{' '}
             {formatDateTime(displayedEnd)}
           </p>
 
           {isApplied && actualSchedule && (
-            <p className="text-xs text-emerald-400 mt-2">
+            <p className="mt-2 flex items-center gap-2 text-xs font-medium text-emerald-400">
+              <CheckCircle size={14} />
               Confirmed in service schedules
             </p>
           )}
         </div>
 
         {mode === 'active' && (
-          <div className="flex flex-wrap justify-end gap-3">
-
+          <div className="flex flex-wrap justify-end gap-3 border-t border-dark-700 pt-4">
             {item.status === 'Pending' && (
               <button
                 onClick={() => approveRecommendation(item._id)}
                 disabled={actionLoading === item._id}
-                className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2"
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <CheckCircle size={16} />
                 {actionLoading === item._id ? 'Processing...' : 'Approve'}
@@ -416,40 +410,64 @@ notifyDataChanged();
               <button
                 onClick={() => applyRecommendation(item._id)}
                 disabled={actionLoading === item._id}
-                className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2"
+                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <CheckCircle size={16} />
                 {actionLoading === item._id ? 'Applying...' : 'Apply Schedule'}
               </button>
             )}
-
           </div>
         )}
 
         {isApplied && (
-          <div className="flex justify-end">
-            <span className="text-emerald-400 text-sm font-semibold flex items-center gap-2">
+          <div className="flex justify-end border-t border-dark-700 pt-4">
+            <span className="flex items-center gap-2 text-sm font-semibold text-emerald-400">
               <CheckCircle size={17} />
               Schedule Successfully Applied
             </span>
           </div>
         )}
-
       </div>
     );
   };
 
-  return (
-    <div className="space-y-6">
+  const summaryCards = [
+    {
+      label: 'Active Schedules',
+      value: activeSchedules.length,
+      color: 'text-white',
+      icon: CalendarClock
+    },
+    {
+      label: 'Pending Approval',
+      value: pendingCount,
+      color: 'text-amber-400',
+      icon: Clock
+    },
+    {
+      label: 'Approved',
+      value: approvedCount,
+      color: 'text-blue-400',
+      icon: CheckCircle
+    },
+    {
+      label: 'Applied',
+      value: appliedCount,
+      color: 'text-emerald-400',
+      icon: CheckCircle
+    }
+  ];
 
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+  return (
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+          <h1 className="flex items-center gap-3 text-2xl font-bold tracking-tight text-white">
             <CalendarClock className="text-blue-400" />
             Smart Scheduling
           </h1>
 
-          <p className="text-slate-400 text-sm mt-2">
+          <p className="mt-2 text-sm text-slate-400">
             AI-powered repair order sequencing and service bay allocation
           </p>
         </div>
@@ -457,7 +475,7 @@ notifyDataChanged();
         <button
           onClick={runOptimization}
           disabled={optimizing}
-          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-5 py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+          className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-500 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
         >
           {optimizing ? (
             <RefreshCw size={18} className="animate-spin" />
@@ -469,63 +487,50 @@ notifyDataChanged();
         </button>
       </div>
 
-      {/* Summary Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((card) => {
+          const Icon = card.icon;
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          return (
+            <div
+              key={card.label}
+              className="rounded-xl border border-dark-700 bg-dark-800 p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-dark-500 hover:shadow-lg"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-400">
+                  {card.label}
+                </p>
+                <Icon size={20} className={card.color} />
+              </div>
 
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5">
-          <p className="text-slate-400 text-sm">Active Schedules</p>
-          <h2 className="text-3xl font-bold text-white mt-2">
-            {activeSchedules.length}
-          </h2>
-        </div>
-
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5">
-          <p className="text-slate-400 text-sm">Pending Approval</p>
-          <h2 className="text-3xl font-bold text-amber-400 mt-2">
-            {pendingCount}
-          </h2>
-        </div>
-
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5">
-          <p className="text-slate-400 text-sm">Approved</p>
-          <h2 className="text-3xl font-bold text-blue-400 mt-2">
-            {approvedCount}
-          </h2>
-        </div>
-
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5">
-          <p className="text-slate-400 text-sm">Applied</p>
-          <h2 className="text-3xl font-bold text-emerald-400 mt-2">
-            {appliedCount}
-          </h2>
-        </div>
-
+              <h2 className={`mt-3 text-3xl font-bold tracking-tight ${card.color}`}>
+                {card.value}
+              </h2>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Active Recommendations */}
-
-      <section className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
-
-        <div className="p-5 border-b border-dark-700">
-          <h2 className="text-lg font-bold text-white">
+      <section className="overflow-hidden rounded-xl border border-dark-700 bg-dark-800 shadow-sm">
+        <div className="border-b border-dark-700 p-5">
+          <h2 className="text-lg font-semibold text-white">
             Active AI Scheduling Recommendations
           </h2>
 
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="mt-1 text-sm text-slate-400">
             Review actionable recommendations for repair orders currently waiting for parts.
           </p>
         </div>
 
         {activeRecommendations.length === 0 ? (
-          <div className="text-center py-16 px-5">
-            <CheckCircle className="mx-auto text-emerald-400 mb-3" size={36} />
+          <div className="px-5 py-16 text-center">
+            <CheckCircle className="mx-auto mb-3 text-emerald-400" size={36} />
 
-            <h3 className="text-white font-semibold">
+            <h3 className="font-semibold text-white">
               No active recommendations
             </h3>
 
-            <p className="text-slate-400 text-sm mt-2">
+            <p className="mt-2 text-sm text-slate-400">
               There are currently no actionable scheduling recommendations.
               Run AI optimization to identify new opportunities.
             </p>
@@ -537,31 +542,27 @@ notifyDataChanged();
             )}
           </div>
         )}
-
       </section>
 
-      {/* Recommendation History */}
-
-      <section className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
-
+      <section className="overflow-hidden rounded-xl border border-dark-700 bg-dark-800 shadow-sm">
         <details>
-          <summary className="p-5 cursor-pointer list-none flex items-center justify-between gap-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-5 transition-colors hover:bg-dark-700/30">
             <div className="flex items-center gap-3">
               <History className="text-slate-400" size={21} />
 
               <div>
-                <h2 className="text-lg font-bold text-white">
+                <h2 className="text-lg font-semibold text-white">
                   Recommendation History
                 </h2>
 
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="mt-1 text-sm text-slate-400">
                   Applied recommendations and outdated recommendations
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-xs bg-dark-900 text-slate-300 px-3 py-1 rounded-full">
+              <span className="rounded-full bg-dark-900 px-3 py-1 text-xs text-slate-300">
                 {historyRecommendations.length} records
               </span>
 
@@ -570,14 +571,12 @@ notifyDataChanged();
           </summary>
 
           <div className="border-t border-dark-700">
-
             {historyRecommendations.length === 0 ? (
-              <p className="text-center text-slate-400 py-10">
+              <p className="py-10 text-center text-sm text-slate-400">
                 No recommendation history available yet.
               </p>
             ) : (
               <div className="divide-y divide-dark-700">
-
                 {appliedRecommendations.map((item) =>
                   renderRecommendation(item, 'applied')
                 )}
@@ -585,91 +584,82 @@ notifyDataChanged();
                 {outdatedRecommendations.map((item) =>
                   renderRecommendation(item, 'outdated')
                 )}
-
               </div>
             )}
-
           </div>
         </details>
-
       </section>
 
-      {/* Existing Service Schedules */}
-
-      <section className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden">
-
-        <div className="p-5 border-b border-dark-700">
-          <h2 className="text-lg font-bold text-white">
+      <section className="overflow-hidden rounded-xl border border-dark-700 bg-dark-800 shadow-sm">
+        <div className="border-b border-dark-700 p-5">
+          <h2 className="text-lg font-semibold text-white">
             Existing Service Schedules
           </h2>
 
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="mt-1 text-sm text-slate-400">
             Schedules currently recorded in the system.
           </p>
         </div>
 
         {schedules.length === 0 ? (
-          <p className="text-center text-slate-400 py-10">
+          <p className="py-10 text-center text-sm text-slate-400">
             No schedules found.
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-
-              <thead className="bg-dark-900 text-slate-400">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-dark-900 text-xs uppercase tracking-wide text-slate-400">
                 <tr>
-                  <th className="p-4">Repair Order</th>
-                  <th className="p-4">Technician</th>
-                  <th className="p-4">Bay</th>
-                  <th className="p-4">Start</th>
-                  <th className="p-4">End</th>
-                  <th className="p-4">Status</th>
+                  <th className="whitespace-nowrap px-5 py-4">Repair Order</th>
+                  <th className="whitespace-nowrap px-5 py-4">Technician</th>
+                  <th className="whitespace-nowrap px-5 py-4">Bay</th>
+                  <th className="whitespace-nowrap px-5 py-4">Start</th>
+                  <th className="whitespace-nowrap px-5 py-4">End</th>
+                  <th className="whitespace-nowrap px-5 py-4">Status</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-dark-700">
                 {schedules.map((schedule) => (
-                  <tr key={schedule._id} className="text-slate-300">
-
-                    <td className="p-4 font-medium text-white">
+                  <tr
+                    key={schedule._id}
+                    className="text-slate-300 transition-colors hover:bg-dark-700/30"
+                  >
+                    <td className="whitespace-nowrap px-5 py-4 font-semibold text-blue-400">
                       {schedule.repairOrder?.roNumber ||
                         getId(schedule.repairOrder)}
                     </td>
 
-                    <td className="p-4">
+                    <td className="whitespace-nowrap px-5 py-4">
                       {schedule.technician?.name ||
                         getId(schedule.technician)}
                     </td>
 
-                    <td className="p-4">
+                    <td className="whitespace-nowrap px-5 py-4">
                       {schedule.serviceBay?.bayNumber ||
                         getId(schedule.serviceBay)}
                     </td>
 
-                    <td className="p-4 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-5 py-4">
                       {formatDateTime(schedule.scheduledStart)}
                     </td>
 
-                    <td className="p-4 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-5 py-4">
                       {formatDateTime(schedule.scheduledEnd)}
                     </td>
 
-                    <td className="p-4">
-                      <span className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">
+                    <td className="whitespace-nowrap px-5 py-4">
+                      <span className="inline-flex rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
                         {schedule.status}
                       </span>
                     </td>
-
                   </tr>
                 ))}
               </tbody>
-
             </table>
           </div>
         )}
-
       </section>
-
     </div>
   );
 }

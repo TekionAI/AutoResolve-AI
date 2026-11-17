@@ -55,10 +55,11 @@ export default function AIDecisionCentre() {
   };
 
   useEffect(() => {
-  fetchRepairOrders();
-}, []);
+    fetchRepairOrders();
+  }, []);
 
-useAutoRefresh(fetchRepairOrders);
+  useAutoRefresh(fetchRepairOrders);
+
   const generateRecommendations = async (e) => {
     e.preventDefault();
 
@@ -170,25 +171,25 @@ useAutoRefresh(fetchRepairOrders);
   if (loading) return <Loading />;
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="p-4 bg-blue-500/20 rounded-2xl border border-blue-500/30 text-blue-400">
-            <BrainCircuit size={32} />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-500/30 bg-blue-500/10 text-blue-400">
+            <BrainCircuit size={30} />
           </div>
 
           <div>
-            <p className="text-blue-400 text-sm font-medium">
+            <p className="text-xs font-semibold tracking-widest text-blue-400">
               INTELLIGENT OPERATIONS
             </p>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-white mt-1">
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-white md:text-3xl">
               AI Decision Centre
             </h1>
 
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="mt-1 text-sm text-slate-400">
               Identify sourcing options and resolve parts shortages.
             </p>
           </div>
@@ -196,7 +197,7 @@ useAutoRefresh(fetchRepairOrders);
 
         <button
           onClick={fetchRepairOrders}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-dark-700 hover:bg-dark-600 text-white"
+          className="flex items-center gap-2 rounded-lg border border-dark-700 bg-dark-800 px-4 py-2.5 text-sm font-medium text-white transition-all hover:border-dark-500 hover:bg-dark-700"
         >
           <RefreshCw size={16} />
           Refresh
@@ -204,33 +205,42 @@ useAutoRefresh(fetchRepairOrders);
       </div>
 
       {/* Blocked Repair Orders */}
-      <section className="bg-dark-800 border border-dark-700 rounded-xl p-6">
+      <section className="rounded-xl border border-dark-700 bg-dark-800 p-5 shadow-sm md:p-6">
 
-        <div className="flex items-center gap-2 mb-2">
-          <AlertTriangle className="text-red-400" size={20} />
+        <div className="mb-2 flex items-center gap-3">
+          <div className="rounded-lg bg-red-500/10 p-2 text-red-400">
+            <AlertTriangle size={19} />
+          </div>
 
           <h2 className="text-lg font-semibold text-white">
             Blocked Repair Orders
           </h2>
+
+          <span className="ml-auto rounded-md border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-400">
+            {repairOrders.length} Blocked
+          </span>
         </div>
 
-        <p className="text-slate-400 text-sm mb-5">
+        <p className="mb-5 text-sm text-slate-400">
           Select a repair order waiting for parts to generate sourcing recommendations.
         </p>
 
         {repairOrders.length === 0 ? (
-          <p className="text-slate-400 text-sm">
-            No blocked repair orders found.
-          </p>
+          <div className="rounded-lg border border-dark-700 bg-dark-900/50 p-5 text-center">
+            <CheckCircle className="mx-auto mb-2 text-emerald-400" size={25} />
+            <p className="text-sm font-medium text-slate-300">
+              No blocked repair orders found.
+            </p>
+          </div>
         ) : (
           <form
             onSubmit={generateRecommendations}
-            className="flex flex-col md:flex-row gap-4"
+            className="flex flex-col gap-3 md:flex-row"
           >
             <select
               value={selectedRO}
               onChange={e => setSelectedRO(e.target.value)}
-              className="flex-1 bg-dark-900 border border-dark-600 rounded-xl px-4 py-3 text-white"
+              className="min-w-0 flex-1 rounded-lg border border-dark-600 bg-dark-900 px-4 py-3 text-sm text-white outline-none transition-colors focus:border-blue-500"
             >
               <option value="">Select a blocked repair order</option>
 
@@ -244,9 +254,13 @@ useAutoRefresh(fetchRepairOrders);
             <button
               type="submit"
               disabled={generating || !selectedRO}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-semibold"
+              className="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Search size={18} />
+              {generating ? (
+                <RefreshCw size={17} className="animate-spin" />
+              ) : (
+                <Search size={17} />
+              )}
               {generating ? 'Generating...' : 'Generate Solution'}
             </button>
           </form>
@@ -255,7 +269,8 @@ useAutoRefresh(fetchRepairOrders);
 
       {/* Error */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400">
+        <div className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0" />
           {error}
         </div>
       )}
@@ -266,6 +281,7 @@ useAutoRefresh(fetchRepairOrders);
         const status = rec.status || 'Pending';
 
         const sourcingOptions = rec.sourcingOptions || [];
+
         const bestSource = sourcingOptions.length
           ? [...sourcingOptions].sort((a, b) => b.score - a.score)[0]
           : null;
@@ -273,22 +289,28 @@ useAutoRefresh(fetchRepairOrders);
         return (
           <section
             key={id || index}
-            className="bg-dark-800 border border-dark-700 rounded-xl overflow-hidden"
+            className="overflow-hidden rounded-xl border border-dark-700 bg-dark-800 shadow-sm"
           >
 
             {/* Recommendation Header */}
-            <div className="p-5 border-b border-dark-700 flex flex-wrap justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-dark-700 p-5">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-500/10 p-2 text-blue-400">
+                  <BrainCircuit size={20} />
+                </div>
 
-              <div className="flex items-center gap-2">
-                <BrainCircuit className="text-blue-400" size={20} />
-
-                <h2 className="text-lg font-semibold text-white">
-                  Sourcing Recommendation {index + 1}
-                </h2>
+                <div>
+                  <h2 className="font-semibold text-white">
+                    Sourcing Recommendation {index + 1}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    AI-assisted sourcing analysis
+                  </p>
+                </div>
               </div>
 
               <span
-                className={`px-3 py-1 rounded-full text-xs ${
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                   status === 'Applied'
                     ? 'bg-emerald-500/10 text-emerald-400'
                     : status === 'Approved'
@@ -300,58 +322,73 @@ useAutoRefresh(fetchRepairOrders);
               </span>
             </div>
 
-            <div className="p-5 space-y-6">
+            <div className="space-y-6 p-5">
 
               {/* AI Explanation */}
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Award className="text-blue-400" size={19} />
+              <div className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <Award className="text-blue-400" size={20} />
 
                   <h3 className="font-semibold text-white">
                     AI Recommended Decision
                   </h3>
                 </div>
 
-                <p className="text-sm text-slate-300">
+                <p className="text-sm leading-6 text-slate-300">
                   {rec.explanation || 'No explanation available.'}
                 </p>
 
                 {bestSource && (
-                  <p className="text-sm text-blue-400 font-medium mt-3">
-                    Highest-ranked source: {bestSource.sourceName}
-                    {' '}({bestSource.score} points)
-                  </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-blue-500/10 pt-3">
+                    <span className="text-xs text-slate-400">
+                      Highest-ranked source
+                    </span>
+                    <span className="text-sm font-semibold text-blue-400">
+                      {bestSource.sourceName}
+                    </span>
+                    <span className="rounded-md bg-blue-500/10 px-2 py-1 text-xs font-semibold text-blue-300">
+                      {bestSource.score} points
+                    </span>
+                  </div>
                 )}
               </div>
 
               {/* Sourcing Options */}
               <div>
-                <div className="flex flex-wrap justify-between items-center gap-2 mb-4">
-                  <h3 className="text-white font-semibold text-lg">
-                    Alternative Sourcing Options
-                  </h3>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="font-semibold text-white">
+                      Alternative Sourcing Options
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Compare eligible sources before applying the recommendation
+                    </p>
+                  </div>
 
-                  <span className="text-xs text-slate-400">
-                    {sourcingOptions.length} eligible options evaluated
+                  <span className="rounded-md border border-dark-700 bg-dark-900 px-3 py-1.5 text-xs text-slate-400">
+                    {sourcingOptions.length} options evaluated
                   </span>
                 </div>
 
                 {sourcingOptions.length === 0 ? (
-                  <p className="text-slate-400 text-sm">
-                    No sourcing options available.
-                  </p>
+                  <div className="rounded-lg border border-dark-700 bg-dark-900/50 p-5 text-center">
+                    <Package className="mx-auto mb-2 text-slate-500" size={24} />
+                    <p className="text-sm text-slate-400">
+                      No sourcing options available.
+                    </p>
+                  </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="text-slate-400 bg-dark-900">
+                  <div className="overflow-x-auto rounded-lg border border-dark-700">
+                    <table className="w-full min-w-[850px] text-left text-sm">
+                      <thead className="bg-dark-900 text-xs uppercase tracking-wide text-slate-400">
                         <tr>
-                          <th className="p-3">Source</th>
-                          <th className="p-3">Type</th>
-                          <th className="p-3">Stock</th>
-                          <th className="p-3">Total Cost</th>
-                          <th className="p-3">Delivery</th>
-                          <th className="p-3">Reliability</th>
-                          <th className="p-3">Score</th>
+                          <th className="px-4 py-4">Source</th>
+                          <th className="px-4 py-4">Type</th>
+                          <th className="px-4 py-4">Stock</th>
+                          <th className="px-4 py-4">Total Cost</th>
+                          <th className="px-4 py-4">Delivery</th>
+                          <th className="px-4 py-4">Reliability</th>
+                          <th className="px-4 py-4">Score</th>
                         </tr>
                       </thead>
 
@@ -365,55 +402,56 @@ useAutoRefresh(fetchRepairOrders);
                             return (
                               <tr
                                 key={option._id}
-                                className={`border-b border-dark-700 ${
+                                className={`border-t border-dark-700 transition-colors hover:bg-dark-700/30 ${
                                   isBest ? 'bg-blue-500/5' : ''
                                 }`}
                               >
-                                <td className="p-3">
-                                  <div className="font-medium text-white">
+                                <td className="px-4 py-4">
+                                  <div className="font-semibold text-white">
                                     {option.sourceName}
                                   </div>
 
-                                  <div className="text-xs text-slate-500 mt-1">
+                                  <div className="mt-1 text-xs text-slate-500">
                                     {option.location}
                                   </div>
 
                                   {isBest && (
-                                    <span className="inline-block mt-2 text-xs text-emerald-400">
+                                    <span className="mt-2 inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-400">
+                                      <CheckCircle size={12} />
                                       Recommended
                                     </span>
                                   )}
                                 </td>
 
-                                <td className="p-3 text-slate-300">
+                                <td className="px-4 py-4 text-slate-300">
                                   {option.sourceType}
                                 </td>
 
-                                <td className="p-3 text-slate-300">
+                                <td className="px-4 py-4 text-slate-300">
                                   {option.availableQuantity} units
                                 </td>
 
-                                <td className="p-3 text-white font-medium">
+                                <td className="px-4 py-4 font-semibold text-white">
                                   ₹{(
                                     option.unitPrice * option.quantity
                                   ).toLocaleString('en-IN')}
                                 </td>
 
-                                <td className="p-3 text-slate-300">
-                                  <span className="flex items-center gap-1">
-                                    <Clock size={14} />
+                                <td className="px-4 py-4 text-slate-300">
+                                  <span className="flex items-center gap-2">
+                                    <Clock size={14} className="text-slate-500" />
                                     {option.estimatedDeliveryHours} hrs
                                   </span>
                                 </td>
 
-                                <td className="p-3 text-slate-300">
-                                  <span className="flex items-center gap-1">
-                                    <ShieldCheck size={14} />
+                                <td className="px-4 py-4 text-slate-300">
+                                  <span className="flex items-center gap-2">
+                                    <ShieldCheck size={14} className="text-slate-500" />
                                     {option.reliabilityScore}%
                                   </span>
                                 </td>
 
-                                <td className="p-3 font-semibold text-blue-400">
+                                <td className="px-4 py-4 font-bold text-blue-400">
                                   {Number(option.score).toFixed(2)}
                                 </td>
                               </tr>
@@ -426,37 +464,37 @@ useAutoRefresh(fetchRepairOrders);
               </div>
 
               {/* Shortage Summary */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
 
-                <div className="bg-dark-900 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-slate-400 text-sm mb-2">
-                    <Package size={16} />
+                <div className="rounded-xl border border-dark-700 bg-dark-900/70 p-4 transition-colors hover:border-dark-500">
+                  <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
+                    <Package size={17} />
                     Required Quantity
                   </div>
 
-                  <p className="text-xl font-bold text-white">
+                  <p className="text-2xl font-bold text-white">
                     {rec.shortageDetails?.requiredQuantity ?? 0}
                   </p>
                 </div>
 
-                <div className="bg-dark-900 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-slate-400 text-sm mb-2">
-                    <Truck size={16} />
+                <div className="rounded-xl border border-dark-700 bg-dark-900/70 p-4 transition-colors hover:border-dark-500">
+                  <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
+                    <Truck size={17} />
                     Recommended Delivery
                   </div>
 
-                  <p className="text-xl font-bold text-white">
+                  <p className="text-2xl font-bold text-white">
                     {rec.proposedSource?.estimatedDeliveryHours ?? 0} hrs
                   </p>
                 </div>
 
-                <div className="bg-dark-900 rounded-xl p-4">
-                  <div className="flex items-center gap-2 text-slate-400 text-sm mb-2">
-                    <IndianRupee size={16} />
+                <div className="rounded-xl border border-dark-700 bg-dark-900/70 p-4 transition-colors hover:border-dark-500">
+                  <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
+                    <IndianRupee size={17} />
                     Recommended Total Cost
                   </div>
 
-                  <p className="text-xl font-bold text-white">
+                  <p className="text-2xl font-bold text-white">
                     ₹{Number(
                       rec.proposedSource?.estimatedCost ?? 0
                     ).toLocaleString('en-IN')}
@@ -467,16 +505,15 @@ useAutoRefresh(fetchRepairOrders);
 
               {/* Manager Actions */}
               {id && (
-                <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex flex-wrap items-center gap-3 border-t border-dark-700 pt-5">
 
                   {status !== 'Approved' && status !== 'Applied' && (
                     <button
                       onClick={() => approveRecommendation(id)}
                       disabled={processingId === id}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg font-semibold"
+                      className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <CheckCircle size={17} />
-
                       {processingId === id
                         ? 'Processing...'
                         : 'Approve Recommendation'}
@@ -487,10 +524,9 @@ useAutoRefresh(fetchRepairOrders);
                     <button
                       onClick={() => applyRecommendation(id)}
                       disabled={processingId === id}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg font-semibold"
+                      className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Play size={17} />
-
                       {processingId === id
                         ? 'Applying...'
                         : 'Apply Recommendation'}
@@ -498,8 +534,8 @@ useAutoRefresh(fetchRepairOrders);
                   )}
 
                   {status === 'Applied' && (
-                    <p className="text-emerald-400 text-sm flex items-center gap-2">
-                      <CheckCircle size={17} />
+                    <p className="flex items-center gap-2 text-sm font-medium text-emerald-400">
+                      <CheckCircle size={18} />
                       Recommendation successfully applied.
                     </p>
                   )}

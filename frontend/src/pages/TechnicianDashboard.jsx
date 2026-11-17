@@ -14,6 +14,7 @@ import {
 
 import { technicianService } from '../services/technicianService';
 import Loading from '../components/common/Loading';
+import StatusBadge from '../components/common/StatusBadge';
 import useAutoRefresh, { notifyDataChanged } from '../hooks/useAutoRefresh';
 
 const formatDate = (date) => {
@@ -25,18 +26,6 @@ const formatDate = (date) => {
   });
 };
 
-const getStatusStyle = (status) => {
-  const styles = {
-    'Ready for Service': 'bg-blue-500/10 text-blue-400',
-    'In Progress': 'bg-yellow-500/10 text-yellow-400',
-    'Completed': 'bg-green-500/10 text-green-400',
-    'Waiting for Parts': 'bg-red-500/10 text-red-400',
-    'Created': 'bg-gray-500/10 text-gray-400'
-  };
-
-  return styles[status] || 'bg-gray-500/10 text-gray-400';
-};
-
 export default function TechnicianDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,14 +34,9 @@ export default function TechnicianDashboard() {
   const [error, setError] = useState('');
 
   const fetchDashboard = useCallback(async (showRefresh = false, showLoading = false) => {
-  try {
-    if (showRefresh) {
-      setRefreshing(true);
-    }
-
-    if (showLoading) {
-      setLoading(true);
-    }
+    try {
+      if (showRefresh) setRefreshing(true);
+      if (showLoading) setLoading(true);
 
       setError('');
 
@@ -70,10 +54,10 @@ export default function TechnicianDashboard() {
   }, []);
 
   useEffect(() => {
-  fetchDashboard(false, true);
-}, [fetchDashboard]);
+    fetchDashboard(false, true);
+  }, [fetchDashboard]);
 
-useAutoRefresh(fetchDashboard);
+  useAutoRefresh(fetchDashboard);
 
   const handleJobAction = async (repairOrderId, action) => {
     const actionKey = `${repairOrderId}-${action}`;
@@ -88,8 +72,8 @@ useAutoRefresh(fetchDashboard);
         await technicianService.completeJob(repairOrderId);
       }
 
-     await fetchDashboard(true);
-notifyDataChanged();
+      await fetchDashboard(true);
+      notifyDataChanged();
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -153,10 +137,10 @@ notifyDataChanged();
     <div className="space-y-6 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Technician Dashboard
           </h1>
-          <p className="mt-1 text-sm text-gray-400">
+          <p className="mt-1 text-sm text-slate-400">
             View your assigned jobs and update their progress.
           </p>
         </div>
@@ -164,7 +148,7 @@ notifyDataChanged();
         <button
           onClick={() => fetchDashboard(true)}
           disabled={refreshing}
-          className="flex items-center gap-2 rounded-lg bg-dark-700 px-4 py-2 text-sm text-white hover:bg-dark-600 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg border border-dark-600 bg-dark-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-dark-600 disabled:opacity-50"
         >
           <RefreshCw
             size={16}
@@ -181,33 +165,62 @@ notifyDataChanged();
         </div>
       )}
 
-      <div className="rounded-xl border border-dark-700 bg-dark-800 p-5">
-        <h2 className="text-lg font-semibold text-white">
-          Welcome, {technician.name || 'Technician'}
-        </h2>
+      <div className="rounded-xl border border-dark-700 bg-dark-800 p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-blue-400">
+              Technician Profile
+            </p>
+            <h2 className="text-xl font-semibold text-white">
+              Welcome, {technician.name || 'Technician'}
+            </h2>
+          </div>
 
-        <div className="mt-3 flex flex-wrap gap-x-8 gap-y-2 text-sm text-gray-400">
-          <span>
-            Employee ID: {technician.employeeId || 'N/A'}
-          </span>
-          <span>
-            Shift: {technician.shiftStart || '09:00'} – {technician.shiftEnd || '18:00'}
-          </span>
-          <span>
-            Availability: {technician.availabilityStatus || 'N/A'}
+          <span className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400">
+            {technician.availabilityStatus || 'Availability N/A'}
           </span>
         </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {(technician.skills || []).map((skill, index) => (
-            <span
-              key={`${skill}-${index}`}
-              className="rounded-full bg-blue-500/10 px-3 py-1 text-xs text-blue-400"
-            >
-              {skill}
-            </span>
-          ))}
+        <div className="mt-5 grid grid-cols-1 gap-4 border-t border-dark-700 pt-4 sm:grid-cols-3">
+          <div>
+            <p className="text-xs text-slate-500">Employee ID</p>
+            <p className="mt-1 text-sm font-medium text-slate-200">
+              {technician.employeeId || 'N/A'}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500">Shift Timing</p>
+            <p className="mt-1 text-sm font-medium text-slate-200">
+              {technician.shiftStart || '09:00'} - {technician.shiftEnd || '18:00'}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-xs text-slate-500">Availability</p>
+            <p className="mt-1 text-sm font-medium text-slate-200">
+              {technician.availabilityStatus || 'N/A'}
+            </p>
+          </div>
         </div>
+
+        {(technician.skills || []).length > 0 && (
+          <div className="mt-5 border-t border-dark-700 pt-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Skills
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {technician.skills.map((skill, index) => (
+                <span
+                  key={`${skill}-${index}`}
+                  className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -217,14 +230,16 @@ notifyDataChanged();
           return (
             <div
               key={card.label}
-              className="rounded-xl border border-dark-700 bg-dark-800 p-5"
+              className="rounded-xl border border-dark-700 bg-dark-800 p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-dark-500 hover:shadow-lg"
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-400">{card.label}</p>
+                <p className="text-sm font-medium text-slate-400">
+                  {card.label}
+                </p>
                 <Icon size={20} className={card.color} />
               </div>
 
-              <p className="mt-3 text-3xl font-bold text-white">
+              <p className="mt-3 text-3xl font-bold tracking-tight text-white">
                 {card.value}
               </p>
             </div>
@@ -244,26 +259,29 @@ notifyDataChanged();
         </div>
       )}
 
-      <div className="rounded-xl border border-dark-700 bg-dark-800">
-        <div className="flex items-center justify-between border-b border-dark-700 p-5">
+      <div className="overflow-hidden rounded-xl border border-dark-700 bg-dark-800 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-dark-700 p-5">
           <div>
             <h2 className="text-lg font-semibold text-white">
               My Assigned Jobs
             </h2>
-            <p className="mt-1 text-sm text-gray-400">
+            <p className="mt-1 text-sm text-slate-400">
               Jobs assigned to your technician account.
             </p>
           </div>
 
-          <span className="rounded-full bg-blue-500/10 px-3 py-1 text-sm text-blue-400">
+          <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-sm font-medium text-blue-400">
             {jobs.length} Jobs
           </span>
         </div>
 
         {jobs.length === 0 ? (
-          <div className="p-10 text-center text-gray-400">
+          <div className="p-10 text-center text-slate-400">
             <Briefcase size={32} className="mx-auto mb-3 opacity-50" />
-            No jobs assigned to you yet.
+            <p className="font-medium text-slate-300">No jobs assigned</p>
+            <p className="mt-1 text-sm">
+              New assignments will appear here.
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-dark-700">
@@ -281,62 +299,68 @@ notifyDataChanged();
               const actionKey = `${job._id}-${isInProgress ? 'complete' : 'start'}`;
 
               return (
-                <div key={job._id} className="space-y-4 p-5">
+                <div
+                  key={job._id}
+                  className="space-y-4 p-5 transition-colors hover:bg-dark-700/20"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="font-semibold text-white">
                         {job.roNumber || 'Repair Order'}
                       </h3>
-                      <p className="mt-1 text-sm text-gray-400">
-                        {job.customer?.name || 'Customer'} ·{' '}
+                      <p className="mt-1 text-sm text-slate-400">
+                        {job.customer?.name || 'Customer'} {' | '}
                         {job.vehicle?.make || ''} {job.vehicle?.model || ''}
                       </p>
                     </div>
 
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusStyle(job.status)}`}
-                    >
-                      {job.status}
-                    </span>
+                    <StatusBadge status={job.status} />
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
                     <div>
-                      <p className="text-gray-500">Operation</p>
-                      <p className="mt-1 text-gray-200">
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Operation
+                      </p>
+                      <p className="mt-1 text-slate-200">
                         {job.operation || 'N/A'}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-gray-500">Service Bay</p>
-                      <p className="mt-1 text-gray-200">
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Service Bay
+                      </p>
+                      <p className="mt-1 text-slate-200">
                         {job.assignedBay?.bayNumber || 'Not assigned'}
                       </p>
                     </div>
 
                     <div>
-                      <p className="text-gray-500">Scheduled Start</p>
-                      <p className="mt-1 flex items-center gap-2 text-gray-200">
-                        <CalendarDays size={15} />
+                      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Scheduled Start
+                      </p>
+                      <p className="mt-1 flex items-center gap-2 text-slate-200">
+                        <CalendarDays size={15} className="text-slate-500" />
                         {formatDate(job.scheduledStart)}
                       </p>
                     </div>
                   </div>
 
                   {job.requiredParts?.length > 0 && (
-                    <div>
-                      <p className="mb-2 text-xs font-medium text-gray-500">
-                        REQUIRED PARTS
+                    <div className="rounded-lg border border-dark-700 bg-dark-900/40 p-3">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Required Parts
                       </p>
 
                       <div className="flex flex-wrap gap-2">
                         {job.requiredParts.map((item, index) => (
                           <span
                             key={item._id || index}
-                            className="rounded-md bg-dark-700 px-3 py-1.5 text-xs text-gray-300"
+                            className="rounded-md border border-dark-600 bg-dark-700 px-3 py-1.5 text-xs text-slate-300"
                           >
-                            {item.part?.name || item.part?.partName || 'Part'} · Qty: {item.requiredQuantity}
+                            {item.part?.name || item.part?.partName || 'Part'}
+                            {' | '}Qty: {item.requiredQuantity}
                           </span>
                         ))}
                       </div>
@@ -344,13 +368,19 @@ notifyDataChanged();
                   )}
 
                   {isBlocked && (
-                    <p className="text-sm text-red-400">
-                      Blocked: {job.blockedReason || 'This job is blocked.'}
-                    </p>
+                    <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-400">
+                      <div className="flex items-center gap-2 font-medium">
+                        <AlertTriangle size={16} />
+                        Job Blocked
+                      </div>
+                      <p className="mt-1">
+                        {job.blockedReason || 'This job is blocked.'}
+                      </p>
+                    </div>
                   )}
 
                   <div className="flex flex-wrap items-center justify-between gap-3 border-t border-dark-700 pt-4">
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-slate-500">
                       Estimated completion: {formatDate(job.estimatedCompletion)}
                     </p>
 
@@ -359,7 +389,7 @@ notifyDataChanged();
                         <button
                           onClick={() => handleJobAction(job._id, 'start')}
                           disabled={!!actionLoading || isBlocked || !!isScheduled}
-                          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <Play size={15} />
                           {actionLoading === actionKey
@@ -374,7 +404,7 @@ notifyDataChanged();
                         <button
                           onClick={() => handleJobAction(job._id, 'complete')}
                           disabled={!!actionLoading}
-                          className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-40"
+                          className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           <CheckCheck size={16} />
                           {actionLoading === actionKey
@@ -384,14 +414,14 @@ notifyDataChanged();
                       )}
 
                       {isCompleted && (
-                        <span className="flex items-center gap-2 text-sm text-green-400">
+                        <span className="flex items-center gap-2 text-sm font-medium text-emerald-400">
                           <CheckCircle size={17} />
                           Job Completed
                         </span>
                       )}
 
                       {!isReady && !isInProgress && !isCompleted && (
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-slate-500">
                           No action available
                         </span>
                       )}

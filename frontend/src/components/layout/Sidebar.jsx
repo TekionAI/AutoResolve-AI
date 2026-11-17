@@ -2,9 +2,17 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard, Wrench, Box, Truck, MapPin,
-  BrainCircuit, CalendarClock, LineChart, Users,
-  Settings, X
+  LayoutDashboard,
+  Wrench,
+  Box,
+  Truck,
+  MapPin,
+  BrainCircuit,
+  CalendarClock,
+  LineChart,
+  Users,
+  Settings,
+  X
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -40,24 +48,40 @@ export default function Sidebar({ isOpen, toggle }) {
         />
       )}
 
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-dark-800 border-r border-dark-700 flex flex-col transition-transform duration-300 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
-        <div className="h-16 flex items-center justify-between px-6 border-b border-dark-700 shrink-0">
-          <div className="flex items-center space-x-2 text-blue-500 font-bold text-xl tracking-wide">
-            <BrainCircuit size={24} />
-            <span className="text-white">
-              AutoResolve<span className="text-blue-500">AI</span>
-            </span>
-          </div>
+      <aside
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64
+          bg-[#111827] border-r border-white/10 flex flex-col
+          transition-transform duration-300 ${
+            isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          }`}
+      >
+        <div className="h-16 flex items-center justify-between px-5 border-b border-white/10 shrink-0">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#00C3B4]/10 text-[#00C3B4]">
+              <BrainCircuit size={22} />
+            </div>
 
-          <button onClick={toggle} className="lg:hidden text-slate-400">
-            <X size={24} />
+            <div className="flex flex-col">
+              <span className="text-white font-bold text-lg tracking-tight leading-tight">
+                AutoResolve<span className="text-[#00C3B4]">AI</span>
+              </span>
+              <span className="text-[10px] text-slate-500 tracking-wider uppercase">
+                Service Intelligence
+              </span>
+            </div>
+          </Link>
+
+          <button
+            onClick={toggle}
+            className="lg:hidden text-slate-400 hover:text-white transition-colors"
+            aria-label="Close sidebar"
+          >
+            <X size={22} />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-1">
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 ml-2 mt-2">
+        <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 py-5 space-y-1">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.16em] mb-4 ml-3">
             Operations
           </div>
 
@@ -72,18 +96,34 @@ export default function Sidebar({ isOpen, toggle }) {
                 onClick={() => {
                   if (window.innerWidth < 1024) toggle();
                 }}
-                className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
-                  active
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20'
-                    : 'text-slate-400 hover:bg-dark-700 hover:text-slate-100'
-                }`}
+                className={`relative flex items-center gap-3 px-3 py-2.5 rounded-lg
+                  transition-all duration-200 text-sm font-medium ${
+                    active
+                      ? 'bg-[#00C3B4]/10 text-[#00C3B4] border border-[#00C3B4]/20'
+                      : 'text-slate-400 border border-transparent hover:bg-white/5 hover:text-slate-100'
+                  }`}
               >
-                <Icon size={18} />
+                {active && (
+                  <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-[#00C3B4]" />
+                )}
+
+                <Icon
+                  size={18}
+                  strokeWidth={active ? 2.4 : 1.8}
+                  className={active ? 'text-[#00C3B4]' : 'text-slate-500'}
+                />
+
                 <span>{item.label}</span>
               </Link>
             );
           })}
         </nav>
+
+        <div className="px-5 py-4 border-t border-white/10">
+          <p className="text-[10px] text-slate-600 uppercase tracking-wider">
+            Built for modern automotive service operations
+          </p>
+        </div>
       </aside>
     </>
   );

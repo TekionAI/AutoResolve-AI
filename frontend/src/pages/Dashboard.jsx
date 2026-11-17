@@ -101,10 +101,10 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-  fetchDashboardData();
-}, [fetchDashboardData]);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
-useAutoRefresh(fetchDashboardData);
+  useAutoRefresh(fetchDashboardData);
 
   if (loading) return <Loading />;
 
@@ -164,13 +164,13 @@ useAutoRefresh(fetchDashboardData);
 
       {/* Header */}
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-dark-700">
         <div>
-          <p className="text-blue-400 text-sm font-medium">
-            SERVICE OPERATIONS
+          <p className="text-blue-400 text-xs font-semibold tracking-widest uppercase">
+            Service Operations
           </p>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-white mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mt-2">
             Operations Dashboard
           </h1>
 
@@ -183,8 +183,10 @@ useAutoRefresh(fetchDashboardData);
           onClick={() => fetchDashboardData(true)}
           disabled={refreshing}
           className="flex items-center gap-2 px-4 py-2.5 rounded-lg
-          bg-blue-600 hover:bg-blue-500 disabled:opacity-50
-          text-white text-sm font-medium"
+            bg-blue-600 hover:bg-blue-500 active:bg-blue-700
+            disabled:opacity-50 disabled:cursor-not-allowed
+            text-white text-sm font-medium shadow-sm
+            transition-all duration-200"
         >
           <RefreshCw
             size={16}
@@ -196,7 +198,7 @@ useAutoRefresh(fetchDashboardData);
 
       {error && (
         <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30
-        text-red-400 flex items-center gap-2">
+          text-red-400 flex items-center gap-2">
           <AlertTriangle size={18} />
           {error}
         </div>
@@ -236,7 +238,7 @@ useAutoRefresh(fetchDashboardData);
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-        <section className="bg-dark-800 border border-dark-700 rounded-xl p-5">
+        <section className="bg-dark-800 border border-dark-700 rounded-xl p-6 shadow-sm transition-all duration-200 hover:border-dark-500">
 
           <div className="flex items-center gap-2 mb-5">
             <BarChart3 className="text-blue-400" size={20} />
@@ -270,7 +272,7 @@ useAutoRefresh(fetchDashboardData);
                     </span>
                   </div>
 
-                  <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
+                  <div className="w-full h-2.5 bg-dark-900 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${
                         statusColors[item.status] || 'bg-slate-500'
@@ -296,7 +298,7 @@ useAutoRefresh(fetchDashboardData);
           </div>
         </section>
 
-        <section className="bg-dark-800 border border-dark-700 rounded-xl p-5">
+        <section className="bg-dark-800 border border-dark-700 rounded-xl p-6 shadow-sm transition-all duration-200 hover:border-dark-500">
 
           <div className="flex items-center gap-2 mb-5">
             <TrendingUp className="text-purple-400" size={20} />
@@ -332,7 +334,7 @@ useAutoRefresh(fetchDashboardData);
                     </span>
                   </div>
 
-                  <div className="w-full h-2 bg-dark-900 rounded-full overflow-hidden">
+                  <div className="w-full h-2.5 bg-dark-900 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${
                         item.priority === 'Urgent'
@@ -369,10 +371,10 @@ useAutoRefresh(fetchDashboardData);
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         <section className="xl:col-span-2 bg-dark-800 border
-        border-dark-700 rounded-xl overflow-hidden">
+          border-dark-700 rounded-xl overflow-hidden">
 
           <div className="p-5 border-b border-dark-700 flex
-          items-center justify-between">
+            items-center justify-between">
 
             <div>
               <h2 className="text-lg font-semibold text-white">
@@ -392,13 +394,13 @@ useAutoRefresh(fetchDashboardData);
 
             <table className="w-full text-sm text-left">
 
-              <thead className="text-slate-400 bg-dark-900/60">
+              <thead className="text-slate-300 bg-dark-900/80 uppercase text-xs tracking-wider">
                 <tr>
-                  <th className="p-4">RO Number</th>
-                  <th className="p-4">Customer</th>
-                  <th className="p-4">Vehicle</th>
-                  <th className="p-4">Priority</th>
-                  <th className="p-4">Status</th>
+                  <th className="px-5 py-4">RO Number</th>
+                  <th className="px-5 py-4">Customer</th>
+                  <th className="px-5 py-4">Vehicle</th>
+                  <th className="px-5 py-4">Priority</th>
+                  <th className="px-5 py-4">Status</th>
                 </tr>
               </thead>
 
@@ -407,33 +409,33 @@ useAutoRefresh(fetchDashboardData);
                 {recentOrders.map(ro => (
                   <tr
                     key={ro._id}
-                    className="hover:bg-dark-700/40 transition-colors"
+                    className="hover:bg-dark-700/50 transition-colors duration-200"
                   >
 
-                    <td className="p-4 font-semibold text-blue-400">
+                    <td className="px-5 py-4 font-semibold text-blue-400">
                       {ro.roNumber}
                     </td>
 
-                    <td className="p-4 text-white">
+                    <td className="px-5 py-4 text-white">
                       {ro.customer?.name || 'N/A'}
                     </td>
 
-                    <td className="p-4 text-slate-300">
+                    <td className="px-5 py-4 text-slate-300">
                       {ro.vehicle?.model || 'N/A'}
                     </td>
 
-                    <td className={`p-4 font-medium ${
+                    <td className={`px-5 py-4 font-medium ${
                       priorityStyles[ro.priority] || 'text-slate-300'
                     }`}>
                       {ro.priority || 'N/A'}
                     </td>
 
-                    <td className="p-4">
+                    <td className="px-5 py-4">
                       <span className={`px-2.5 py-1 rounded-full
-                      text-xs whitespace-nowrap ${
-                        statusStyles[ro.status] ||
-                        'bg-slate-500/10 text-slate-400'
-                      }`}>
+                        text-xs whitespace-nowrap ${
+                          statusStyles[ro.status] ||
+                          'bg-slate-500/10 text-slate-400'
+                        }`}>
                         {ro.status}
                       </span>
                     </td>
@@ -459,9 +461,10 @@ useAutoRefresh(fetchDashboardData);
         {/* Parts Shortage Alerts */}
 
         <section className="bg-dark-800 border border-dark-700
-        rounded-xl overflow-hidden">
+          rounded-xl overflow-hidden shadow-sm transition-all duration-200
+          hover:border-dark-500">
 
-          <div className="p-5 border-b border-dark-700">
+          <div className="p-5 border-b border-dark-700 bg-dark-900/30">
 
             <div className="flex items-center gap-2">
               <AlertTriangle className="text-red-400" size={20} />
@@ -482,7 +485,9 @@ useAutoRefresh(fetchDashboardData);
             {blockedOrders.map(ro => (
               <div
                 key={ro._id}
-                className="p-4 rounded-lg bg-red-500/5 border border-red-500/20"
+                className="p-4 rounded-lg bg-red-500/5 border border-red-500/20
+                  transition-all duration-200 hover:bg-red-500/10
+                  hover:border-red-500/40"
               >
 
                 <div className="flex justify-between items-center gap-2">
@@ -523,7 +528,8 @@ useAutoRefresh(fetchDashboardData);
 
       {/* Service Bays */}
 
-      <section className="bg-dark-800 border border-dark-700 rounded-xl">
+      <section className="bg-dark-800 border border-dark-700 rounded-xl
+        shadow-sm overflow-hidden">
 
         <div className="p-5 border-b border-dark-700">
 
@@ -546,7 +552,9 @@ useAutoRefresh(fetchDashboardData);
           {bays.map(bay => (
             <div
               key={bay._id}
-              className="p-4 rounded-lg bg-dark-900 border border-dark-700"
+              className="p-4 rounded-lg bg-dark-900 border border-dark-700
+                transition-all duration-200 hover:border-dark-500
+                hover:bg-dark-800"
             >
 
               <div className="flex justify-between items-center">
@@ -571,7 +579,7 @@ useAutoRefresh(fetchDashboardData);
                 {bay.bayType}
               </p>
 
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
                 {bay.supportedServices?.join(', ')}
               </p>
 
@@ -589,7 +597,8 @@ useAutoRefresh(fetchDashboardData);
 
       {/* Scheduled Jobs */}
 
-      <section className="bg-dark-800 border border-dark-700 rounded-xl">
+      <section className="bg-dark-800 border border-dark-700 rounded-xl
+        shadow-sm overflow-hidden">
 
         <div className="p-5 border-b border-dark-700">
 
@@ -613,7 +622,9 @@ useAutoRefresh(fetchDashboardData);
             <div
               key={schedule._id}
               className="flex flex-wrap justify-between gap-4
-              p-4 rounded-lg bg-dark-900 border border-dark-700"
+                p-4 rounded-lg bg-dark-900 border border-dark-700
+                transition-all duration-200 hover:border-dark-500
+                hover:bg-dark-800"
             >
 
               <div>
@@ -660,7 +671,9 @@ useAutoRefresh(fetchDashboardData);
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5">
+        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5
+          shadow-sm transition-all duration-200 hover:border-dark-500">
+
           <div className="flex items-center gap-2 text-slate-400 text-sm">
             <Package size={17} />
             Total Repair Orders
@@ -671,7 +684,9 @@ useAutoRefresh(fetchDashboardData);
           </p>
         </div>
 
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5">
+        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5
+          shadow-sm transition-all duration-200 hover:border-dark-500">
+
           <div className="flex items-center gap-2 text-slate-400 text-sm">
             <Activity size={17} />
             Service Bays
@@ -682,7 +697,9 @@ useAutoRefresh(fetchDashboardData);
           </p>
         </div>
 
-        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5">
+        <div className="bg-dark-800 border border-dark-700 rounded-xl p-5
+          shadow-sm transition-all duration-200 hover:border-dark-500">
+
           <div className="flex items-center gap-2 text-slate-400 text-sm">
             <CalendarClock size={17} />
             Total Recorded Schedules

@@ -1,58 +1,145 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BrainCircuit, Lock, Mail, Loader2 } from 'lucide-react';
+import {
+  BrainCircuit,
+  Lock,
+  Mail,
+  Loader2,
+  ArrowRight
+} from 'lucide-react';
 
 export default function Login() {
- const [email, setEmail] = useState('manager@autoresolve.ai');
-const [password, setPassword] = useState('Manager@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const success = await login(email, password);
-    setLoading(false);
-    if (success) navigate('/');
+
+    try {
+      const success = await login(email, password);
+      if (success) navigate('/');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 flex flex-col justify-center items-center p-4">
-      <div className="w-full max-w-md bg-dark-800 rounded-2xl border border-dark-700 shadow-2xl p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl"></div>
-        <div className="text-center mb-8 relative z-10">
-          <div className="inline-flex items-center justify-center p-3 bg-blue-500/20 rounded-xl border border-blue-500/30 mb-4">
-            <BrainCircuit size={32} className="text-blue-500" />
+    <div className="min-h-screen bg-[#111827] flex flex-col justify-center items-center p-4 relative overflow-hidden">
+
+      <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#00C3B4]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-[#007468]/10 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-md bg-[#1F2937] rounded-2xl border border-white/10 shadow-2xl p-8 relative z-10">
+
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#00C3B4]/10 rounded-2xl border border-[#00C3B4]/20 mb-5">
+            <BrainCircuit size={34} className="text-[#00C3B4]" />
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-wide">AutoResolve<span className="text-blue-500">AI</span></h2>
-          <p className="text-slate-400 text-sm mt-2">Sign in to Service Operations Platform</p>
+
+          <h1 className="text-2xl font-bold text-white tracking-tight">
+            AutoResolve<span className="text-[#00C3B4]">AI</span>
+          </h1>
+
+          <p className="text-xs text-slate-500 uppercase tracking-[0.18em] mt-2">
+            Service Intelligence
+          </p>
+
+          <div className="h-px bg-white/10 my-6" />
+
+          <h2 className="text-xl font-semibold text-white">
+            Welcome Back
+          </h2>
+
+          <p className="text-slate-400 text-sm mt-2">
+            Sign in to your Service Operations Platform
+          </p>
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Work Email</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Work Email
+            </label>
+
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} 
-                className="w-full bg-dark-900 border border-dark-700 text-white rounded-xl py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" />
+              <Mail
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
+                size={18}
+              />
+
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="Enter your work email"
+                className="w-full bg-[#111827] border border-white/10 text-white placeholder-slate-600 rounded-xl py-3 pl-11 pr-4 focus:ring-2 focus:ring-[#00C3B4]/40 focus:border-[#00C3B4] outline-none transition-all"
+              />
             </div>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Password
+            </label>
+
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} 
-                className="w-full bg-dark-900 border border-dark-700 text-white rounded-xl py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" />
+              <Lock
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
+                size={18}
+              />
+
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="w-full bg-[#111827] border border-white/10 text-white placeholder-slate-600 rounded-xl py-3 pl-11 pr-4 focus:ring-2 focus:ring-[#00C3B4]/40 focus:border-[#00C3B4] outline-none transition-all"
+              />
             </div>
           </div>
-          <button type="submit" disabled={loading} 
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-colors flex items-center justify-center shadow-lg shadow-blue-900/20 mt-6">
-            {loading ? <Loader2 className="animate-spin" size={20} /> : 'Sign In'}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-[#00A99D] hover:bg-[#00C3B4] disabled:opacity-60 disabled:cursor-not-allowed text-[#071A19] font-bold py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-[#00C3B4]/10 mt-6"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="animate-spin" size={20} />
+                Signing in...
+              </>
+            ) : (
+              <>
+                Sign In
+                <ArrowRight size={18} />
+              </>
+            )}
           </button>
+
         </form>
+
+        <div className="mt-8 pt-5 border-t border-white/10 text-center">
+          <p className="text-xs text-slate-500">
+            Intelligent solutions for modern automotive service operations
+          </p>
+        </div>
+
       </div>
+
+      <p className="text-xs text-slate-600 mt-6 relative z-10">
+        AutoResolveAI · Service Management Platform
+      </p>
+
     </div>
   );
 }

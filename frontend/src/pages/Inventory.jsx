@@ -4,7 +4,13 @@ import { inventoryService } from '../services/inventoryService';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
 import Loading from '../components/common/Loading';
-import { Package, AlertTriangle, Boxes, RefreshCw, Search } from 'lucide-react';
+import {
+  Package,
+  AlertTriangle,
+  Boxes,
+  RefreshCw,
+  Search
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import useAutoRefresh from '../hooks/useAutoRefresh';
 
@@ -50,11 +56,12 @@ export default function Inventory() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
-  
+
   const loadInventory = async (refresh = false, showLoading = false) => {
     try {
-     if (refresh) setRefreshing(true);
-if (showLoading) setLoading(true);
+      if (refresh) setRefreshing(true);
+      if (showLoading) setLoading(true);
+
       const res = await inventoryService.getInventory();
       setData(getArray(res));
     } catch (error) {
@@ -64,15 +71,15 @@ if (showLoading) setLoading(true);
       );
     } finally {
       if (showLoading) setLoading(false);
-setRefreshing(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-  loadInventory(false, true);
-}, []);
+    loadInventory(false, true);
+  }, []);
 
-useAutoRefresh(loadInventory);
+  useAutoRefresh(loadInventory);
 
   const totalStock = data.reduce(
     (sum, row) => sum + Number(row.quantity || 0), 0
@@ -95,7 +102,6 @@ useAutoRefresh(loadInventory);
   ).length;
 
   const filteredData = data.filter(row => {
-    const part = getPart(row);
     const dealership = getDealership(row);
 
     const text = [
@@ -119,7 +125,9 @@ useAutoRefresh(loadInventory);
       accessor: 'part',
       render: row => (
         <div>
-          <p className="font-semibold text-white">{getPartName(row)}</p>
+          <p className="font-semibold text-white">
+            {getPartName(row)}
+          </p>
           <p className="mt-1 text-xs text-slate-400">
             Part No: {getPartNumber(row)}
           </p>
@@ -136,12 +144,15 @@ useAutoRefresh(loadInventory);
       accessor: 'dealership',
       render: row => {
         const dealership = getDealership(row);
+
         return (
           <div>
             <p className="text-slate-200">
               {dealership.name ||
                 dealership.dealershipName ||
-                (typeof row.dealership === 'string' ? row.dealership : 'N/A')}
+                (typeof row.dealership === 'string'
+                  ? row.dealership
+                  : 'N/A')}
             </p>
             {dealership.location && (
               <p className="mt-1 text-xs text-slate-400">
@@ -165,7 +176,7 @@ useAutoRefresh(loadInventory);
       header: 'Reserved',
       accessor: 'reserved',
       render: row => (
-        <span className="text-yellow-400">
+        <span className="font-medium text-yellow-400">
           {Number(row.reserved || 0)}
         </span>
       )
@@ -175,6 +186,7 @@ useAutoRefresh(loadInventory);
       accessor: 'available',
       render: row => {
         const available = getAvailable(row);
+
         return (
           <span className={`font-bold ${
             available === 0
@@ -197,12 +209,43 @@ useAutoRefresh(loadInventory);
 
   if (loading) return <Loading />;
 
+  const summaryCards = [
+    {
+      title: 'Inventory Records',
+      value: data.length,
+      icon: Package,
+      iconColor: 'text-blue-400'
+    },
+    {
+      title: 'Total Stock Units',
+      value: totalStock,
+      icon: Boxes,
+      iconColor: 'text-cyan-400'
+    },
+    {
+      title: 'Available Units',
+      value: totalAvailable,
+      subtitle: `${totalReserved} units reserved`,
+      icon: Package,
+      iconColor: 'text-emerald-400',
+      valueColor: 'text-emerald-400'
+    },
+    {
+      title: 'Stock Alerts',
+      value: lowStockCount + outOfStockCount,
+      subtitle: `${lowStockCount} low stock  ·  ${outOfStockCount} out of stock`,
+      icon: AlertTriangle,
+      iconColor: 'text-yellow-400',
+      valueColor: 'text-yellow-400'
+    }
+  ];
+
   return (
     <div className="space-y-6">
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Local & Network Inventory
           </h1>
           <p className="mt-1 text-sm text-slate-400">
@@ -213,60 +256,48 @@ useAutoRefresh(loadInventory);
         <button
           onClick={() => loadInventory(true)}
           disabled={refreshing}
-          className="flex items-center gap-2 rounded-lg border border-dark-700 bg-dark-800 px-4 py-2 text-sm text-white hover:bg-dark-700 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg border border-dark-700 bg-dark-800 px-4 py-2.5 text-sm font-medium text-white transition-all hover:border-dark-500 hover:bg-dark-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+          <RefreshCw
+            size={16}
+            className={refreshing ? 'animate-spin' : ''}
+          />
           Refresh
         </button>
       </div>
 
-      {/* SUMMARY CARDS */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((card) => {
+          const Icon = card.icon;
 
-        <div className="rounded-xl border border-dark-700 bg-dark-800 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Inventory Records</p>
-            <Package className="text-blue-400" size={21} />
-          </div>
-          <p className="mt-3 text-3xl font-bold text-white">{data.length}</p>
-        </div>
+          return (
+            <div
+              key={card.title}
+              className="rounded-xl border border-dark-700 bg-dark-800 p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-dark-500 hover:shadow-lg"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-400">
+                  {card.title}
+                </p>
+                <Icon className={card.iconColor} size={21} />
+              </div>
 
-        <div className="rounded-xl border border-dark-700 bg-dark-800 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Total Stock Units</p>
-            <Boxes className="text-cyan-400" size={21} />
-          </div>
-          <p className="mt-3 text-3xl font-bold text-white">{totalStock}</p>
-        </div>
+              <p className={`mt-3 text-3xl font-bold tracking-tight ${
+                card.valueColor || 'text-white'
+              }`}>
+                {card.value}
+              </p>
 
-        <div className="rounded-xl border border-dark-700 bg-dark-800 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Available Units</p>
-            <Package className="text-green-400" size={21} />
-          </div>
-          <p className="mt-3 text-3xl font-bold text-green-400">
-            {totalAvailable}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            {totalReserved} units reserved
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-dark-700 bg-dark-800 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Stock Alerts</p>
-            <AlertTriangle className="text-yellow-400" size={21} />
-          </div>
-          <p className="mt-3 text-3xl font-bold text-yellow-400">
-            {lowStockCount + outOfStockCount}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            {lowStockCount} low stock · {outOfStockCount} out of stock
-          </p>
-        </div>
+              {card.subtitle && (
+                <p className="mt-1 text-xs text-slate-500">
+                  {card.subtitle}
+                </p>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* SEARCH AND FILTER */}
       <div className="flex flex-wrap gap-3">
         <div className="relative min-w-[220px] flex-1">
           <Search
@@ -277,14 +308,14 @@ useAutoRefresh(loadInventory);
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search part or dealership..."
-            className="w-full rounded-lg border border-dark-700 bg-dark-800 py-2.5 pl-10 pr-4 text-sm text-white outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-dark-700 bg-dark-800 py-2.5 pl-10 pr-4 text-sm text-white outline-none transition-colors placeholder:text-slate-500 focus:border-blue-500"
           />
         </div>
 
         <select
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          className="rounded-lg border border-dark-700 bg-dark-800 px-4 py-2 text-sm text-white outline-none"
+          className="rounded-lg border border-dark-700 bg-dark-800 px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-blue-500"
         >
           <option value="All">All Stock</option>
           <option value="In Stock">In Stock</option>
@@ -293,11 +324,18 @@ useAutoRefresh(loadInventory);
         </select>
       </div>
 
-      {/* INVENTORY TABLE */}
-      <div className="rounded-xl border border-dark-700 bg-dark-800 p-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-semibold text-white">Inventory Details</h2>
-          <span className="text-xs text-slate-400">
+      <div className="rounded-xl border border-dark-700 bg-dark-800 p-5 shadow-sm">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-semibold text-white">
+              Inventory Details
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Stock availability across dealership locations
+            </p>
+          </div>
+
+          <span className="rounded-md border border-dark-700 bg-dark-900 px-3 py-1.5 text-xs font-medium text-slate-400">
             {filteredData.length} records
           </span>
         </div>
@@ -311,7 +349,7 @@ useAutoRefresh(loadInventory);
       </div>
 
       <p className="text-xs text-slate-500">
-        Available stock = Total stock − Reserved stock. Low stock is defined
+        Available stock = Total stock - Reserved stock. Low stock is defined
         as 5 or fewer available units.
       </p>
 
