@@ -1,14 +1,17 @@
+
 const RepairOrder = require("../models/RepairOrder");
 const Schedule = require("../models/Schedule");
+const Technician = require("../models/Technician");
 const { findBestSchedule } = require("../services/schedulingService");
 
 const generateSchedule = async (req, res) => {
   try {
-    const repairOrder = await RepairOrder.findById(
-      req.params.repairOrderId
-    )
-      .populate("dealership")
-      .populate("requiredParts.part");
+    const repairOrder = await RepairOrder.findOne({
+  _id: req.params.repairOrderId,
+  dealership: req.user.dealership,
+})
+  .populate("dealership")
+  .populate("requiredParts.part");
 
     if (!repairOrder) {
       return res.status(404).json({
@@ -25,9 +28,10 @@ const generateSchedule = async (req, res) => {
     }
 
     const existingSchedule = await Schedule.findOne({
-      repairOrder: repairOrder._id,
-      status: { $in: ["Scheduled", "In Progress"] },
-    });
+  repairOrder: repairOrder._id,
+  dealership: req.user.dealership,
+  status: { $in: ["Scheduled", "In Progress"] },
+});
 
     if (existingSchedule) {
       return res.status(400).json({
@@ -54,7 +58,7 @@ const generateSchedule = async (req, res) => {
 
     const schedule = await Schedule.create({
       repairOrder: repairOrder._id,
-      dealership: repairOrder.dealership._id,
+dealership: req.user.dealership,
       technician: bestSlot.technician._id,
       serviceBay: bestSlot.bay._id,
       scheduledStart: bestSlot.scheduledStart,
@@ -91,7 +95,35 @@ const generateSchedule = async (req, res) => {
 
 const getAllSchedules = async (req, res) => {
   try {
-    const schedules = await Schedule.find()
+    const filter = {
+      dealership: req.user.dealership,
+    };
+
+    if (req.user.role === "Technician") {
+      if (!req.user.technician) {
+        return res.status(404).json({
+          success: false,
+          message: "No technician profile is linked to this account",
+        });
+      }
+
+      const technician = await Technician.findOne({
+        _id: req.user.technician,
+        dealership: req.user.dealership,
+        isActive: true,
+      });
+
+      if (!technician) {
+        return res.status(404).json({
+          success: false,
+          message: "Technician profile not found",
+        });
+      }
+
+      filter.technician = technician._id;
+    }
+
+    const schedules = await Schedule.find(filter)
       .populate("repairOrder")
       .populate("technician")
       .populate("serviceBay")

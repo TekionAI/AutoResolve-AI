@@ -9,13 +9,36 @@ const {
   getRepairOrderById,
   updateRepairOrder,
 } = require("../controllers/repairOrderController");
+
 const protect = require("../middleware/authMiddleware");
 const authorize = require("../middleware/roleMiddleware");
 
+router.post(
+  "/",
+  protect,
+  authorize("Manager", "Service Advisor"),
+  createRepairOrder
+);
 
-router.post("/", protect, authorize("Manager", "Service Advisor"), createRepairOrder);
-router.get("/", protect, getAllRepairOrders);
-router.get("/:id", protect, getRepairOrderById);
-router.put("/:id", protect, authorize("Manager", "Service Advisor"), updateRepairOrder);
+router.get(
+  "/",
+  protect,
+  authorize("Manager", "Service Advisor", "Technician"),
+  getAllRepairOrders
+);
+
+router.get(
+  "/:id",
+  protect,
+  authorize("Manager", "Service Advisor", "Technician"),
+  getRepairOrderById
+);
+
+router.put(
+  "/:id",
+  protect,
+  authorize("Manager", "Service Advisor"),
+  updateRepairOrder
+);
 
 module.exports = router;

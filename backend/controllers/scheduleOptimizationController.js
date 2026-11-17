@@ -1,4 +1,5 @@
 
+const mongoose = require("mongoose");
 const Recommendation = require("../models/Recommendation");
 
 const {
@@ -8,6 +9,20 @@ const {
 const optimizeSchedule = async (req, res) => {
   try {
     const { dealershipId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(dealershipId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid dealership ID",
+      });
+    }
+
+    if (String(dealershipId) !== String(req.user.dealership)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied to this dealership",
+      });
+    }
 
     const options = await generateReschedulingOptions(dealershipId);
 
@@ -49,13 +64,13 @@ const optimizeSchedule = async (req, res) => {
       );
 
       const populatedRecommendation = await recommendation.populate([
-  { path: "repairOrder" },
-  { path: "proposedSchedule.technician" },
-  { path: "proposedSchedule.serviceBay" },
-  { path: "proposedSchedule.repairOrderToMoveForward" },
-]);
+        { path: "repairOrder" },
+        { path: "proposedSchedule.technician" },
+        { path: "proposedSchedule.serviceBay" },
+        { path: "proposedSchedule.repairOrderToMoveForward" },
+      ]);
 
-savedRecommendations.push(populatedRecommendation);
+      savedRecommendations.push(populatedRecommendation);
     }
 
     return res.status(200).json({

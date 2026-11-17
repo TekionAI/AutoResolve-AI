@@ -7,9 +7,10 @@ const { findSourceOptions } = require("../services/sourcingService");
 
 const getSourcingOptions = async (req, res) => {
   try {
-    const repairOrder = await RepairOrder.findById(
-      req.params.repairOrderId
-    ).populate("requiredParts.part");
+    const repairOrder = await RepairOrder.findOne({
+  _id: req.params.repairOrderId,
+  dealership: req.user.dealership,
+}).populate("requiredParts.part");
 
     if (!repairOrder) {
       return res.status(404).json({

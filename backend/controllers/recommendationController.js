@@ -5,9 +5,10 @@ const { findSourceOptions } = require("../services/sourcingService");
 
 const generateSourcingRecommendations = async (req, res) => {
   try {
-    const repairOrder = await RepairOrder.findById(
-      req.params.repairOrderId
-    ).populate("requiredParts.part");
+    const repairOrder = await RepairOrder.findOne({
+  _id: req.params.repairOrderId,
+  dealership: req.user.dealership,
+}).populate("requiredParts.part");
 
     if (!repairOrder) {
       return res.status(404).json({
@@ -189,7 +190,15 @@ const generateSourcingRecommendations = async (req, res) => {
 
 const getAllRecommendations = async (req, res) => {
   try {
-    const recommendations = await Recommendation.find()
+    const repairOrders = await RepairOrder.find({
+      dealership: req.user.dealership,
+    }).select("_id");
+
+    const repairOrderIds = repairOrders.map((order) => order._id);
+
+    const recommendations = await Recommendation.find({
+      repairOrder: { $in: repairOrderIds },
+    })
       .populate("repairOrder")
       .populate("shortageDetails.part")
       .populate("proposedSource.dealership")
@@ -211,7 +220,6 @@ const getAllRecommendations = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   generateSourcingRecommendations,

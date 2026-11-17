@@ -5,6 +5,7 @@ const User = require("../models/User");
 const mongoose = require("mongoose");
 const Dealership = require("../models/Dealership");
 const Technician = require("../models/Technician");
+
 const createUserWithLinkedTechnician = async ({
   name,
   email,
@@ -46,6 +47,8 @@ const createUserWithLinkedTechnician = async ({
     throw error;
   }
 };
+
+// PUBLIC REGISTRATION
 const register = async (req, res) => {
   try {
     const { name, email, password, role, dealership } = req.body;
@@ -66,14 +69,39 @@ const register = async (req, res) => {
 
     const allowedRoles = ["Service Advisor", "Technician"];
 
-if (!allowedRoles.includes(role)) {
-  return res.status(403).json({
-    success: false,
-    message: "Public registration is restricted to Service Advisors and Technicians.",
-  });
-}
+    if (!allowedRoles.includes(role)) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Public registration is restricted to Service Advisors and Technicians.",
+      });
+    }
+
+    // Validate dealership ID
+    if (!mongoose.Types.ObjectId.isValid(dealership)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid dealership ID",
+      });
+    }
+
+    // Only allow registration under an active dealership
+    const existingDealership = await Dealership.findOne({
+      _id: dealership,
+      isActive: true,
+    });
+
+    if (!existingDealership) {
+      return res.status(404).json({
+        success: false,
+        message: "Dealership not found or inactive",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
     const existingUser = await User.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
     });
 
     if (existingUser) {
@@ -85,15 +113,15 @@ if (!allowedRoles.includes(role)) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-   
     const user = await createUserWithLinkedTechnician({
-  name,
-  email,
-  password: hashedPassword,
-  role,
-  dealership,
-});
-    res.status(201).json({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      role,
+      dealership,
+    });
+
+    return res.status(201).json({
       success: true,
       message: "User registered successfully",
       data: {
@@ -105,14 +133,21 @@ if (!allowedRoles.includes(role)) {
       },
     });
   } catch (error) {
-    res.status(500).json({
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "User already exists",
+      });
+    }
+
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
 
-
+// LOGIN
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -125,7 +160,7 @@ const login = async (req, res) => {
     }
 
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: email.trim().toLowerCase(),
     }).select("+password");
 
     if (!user || !user.isActive) {
@@ -144,6 +179,19 @@ const login = async (req, res) => {
       });
     }
 
+    // Verify that the user's dealership exists and is active
+    const activeDealership = await Dealership.findOne({
+      _id: user.dealership,
+      isActive: true,
+    });
+
+    if (!activeDealership) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
     const token = jwt.sign(
       {
         id: user._id,
@@ -156,7 +204,7 @@ const login = async (req, res) => {
       }
     );
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Login successful",
       token,
@@ -170,19 +218,19 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
 
-
-
-
+// MANAGER: GET USERS FROM OWN DEALERSHIP
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find()
+    const users = await User.find({
+      dealership: req.user.dealership,
+    })
       .select("-password")
       .populate("dealership", "name dealershipCode location")
       .sort({ createdAt: -1 });
@@ -200,6 +248,7 @@ const getUsers = async (req, res) => {
   }
 };
 
+// MANAGER: CREATE USER IN OWN DEALERSHIP
 const createManagedUser = async (req, res) => {
   try {
     const { name, email, password, role, dealership } = req.body;
@@ -231,10 +280,32 @@ const createManagedUser = async (req, res) => {
       });
     }
 
+    // Validate dealership ID
     if (!mongoose.Types.ObjectId.isValid(dealership)) {
       return res.status(400).json({
         success: false,
         message: "Invalid dealership ID.",
+      });
+    }
+
+    // Restrict managers to their own dealership
+    if (String(dealership) !== String(req.user.dealership)) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only create users for your own dealership.",
+      });
+    }
+
+    // Confirm dealership exists and is active
+    const dealershipExists = await Dealership.findOne({
+      _id: dealership,
+      isActive: true,
+    });
+
+    if (!dealershipExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Dealership not found or inactive.",
       });
     }
 
@@ -251,24 +322,15 @@ const createManagedUser = async (req, res) => {
       });
     }
 
-    const dealershipExists = await Dealership.findById(dealership);
-
-    if (!dealershipExists) {
-      return res.status(404).json({
-        success: false,
-        message: "Selected dealership does not exist.",
-      });
-    }
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
-   const user = await createUserWithLinkedTechnician({
-  name: name.trim(),
-  email: normalizedEmail,
-  password: hashedPassword,
-  role,
-  dealership,
-});
+    const user = await createUserWithLinkedTechnician({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      role,
+      dealership,
+    });
 
     const createdUser = await User.findById(user._id)
       .select("-password")

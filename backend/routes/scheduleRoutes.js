@@ -19,7 +19,12 @@ const authorize = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-router.get("/", protect, getAllSchedules);
+router.get(
+  "/",
+  protect,
+  authorize("Manager", "Service Advisor", "Technician"),
+  getAllSchedules
+);
 
 router.post(
   "/generate/:repairOrderId",

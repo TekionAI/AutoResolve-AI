@@ -29,13 +29,16 @@ const applyRecommendation = async (req, res) => {
         );
       }
 
-      const repairOrder = await RepairOrder.findById(
-        recommendation.repairOrder
-      ).session(session);
+      const repairOrder = await RepairOrder.findOne({
+  _id: recommendation.repairOrder,
+  dealership: req.user.dealership,
+}).session(session);
 
-      if (!repairOrder) {
-        throw new Error("Repair order not found");
-      }
+if (!repairOrder) {
+  throw new Error(
+    "Repair order not found or access denied"
+  );
+}
 
       const partId = recommendation.shortageDetails.part;
       const dealershipId = repairOrder.dealership;

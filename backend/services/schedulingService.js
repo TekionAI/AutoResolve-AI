@@ -129,7 +129,11 @@ const findAvailableSlot = (
 
 const findBestSchedule = async (repairOrder) => {
   const dealershipId =
-    repairOrder.dealership._id || repairOrder.dealership;
+    repairOrder.dealership?._id || repairOrder.dealership;
+
+  if (!dealershipId) {
+    throw new Error("Repair order dealership is missing");
+  }
 
   const requiredServices = getRequiredServices(repairOrder);
 
@@ -177,11 +181,13 @@ const findBestSchedule = async (repairOrder) => {
       }
 
       const technicianBookings = await Schedule.find({
+        dealership: dealershipId,
         technician: technician._id,
         status: { $in: ["Scheduled", "In Progress", "Delayed"] },
       });
 
       const bayBookings = await Schedule.find({
+        dealership: dealershipId,
         serviceBay: bay._id,
         status: { $in: ["Scheduled", "In Progress", "Delayed"] },
       });

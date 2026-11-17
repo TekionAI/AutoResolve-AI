@@ -1,4 +1,3 @@
-
 const express = require("express");
 
 const {
@@ -12,8 +11,25 @@ const authorize = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-router.post("/", protect, authorize("Manager"), createServiceBay);
-router.get("/", protect, getAllServiceBays);
-router.get("/dealership/:dealershipId", protect, getServiceBaysByDealership);
+router.post(
+  "/",
+  protect,
+  authorize("Manager"),
+  createServiceBay
+);
+
+router.get(
+  "/",
+  protect,
+  authorize("Manager", "Service Advisor", "Technician"),
+  getAllServiceBays
+);
+
+router.get(
+  "/dealership/:dealershipId",
+  protect,
+  authorize("Manager", "Service Advisor", "Technician"),
+  getServiceBaysByDealership
+);
 
 module.exports = router;

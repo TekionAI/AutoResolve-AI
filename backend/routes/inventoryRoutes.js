@@ -9,11 +9,26 @@ const {
   getInventoryByDealership,
   updateInventory,
 } = require("../controllers/inventoryController");
+
 const protect = require("../middleware/authMiddleware");
 const authorize = require("../middleware/roleMiddleware");
 
 router.post("/", protect, authorize("Manager"), createInventory);
-router.get("/", protect, getAllInventory);
-router.get("/dealership/:dealershipId", protect, getInventoryByDealership);
+
+router.get(
+  "/",
+  protect,
+  authorize("Manager", "Service Advisor"),
+  getAllInventory
+);
+
+router.get(
+  "/dealership/:dealershipId",
+  protect,
+  authorize("Manager", "Service Advisor"),
+  getInventoryByDealership
+);
+
 router.put("/:id", protect, authorize("Manager"), updateInventory);
+
 module.exports = router;

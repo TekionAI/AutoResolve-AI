@@ -18,6 +18,9 @@ const createRepairOrder = async (req, res) => {
     await session.withTransaction(async () => {
       const orderData = { ...req.body };
 
+      // Always use the authenticated user's dealership.
+      orderData.dealership = req.user.dealership;
+
       if (
         !Array.isArray(orderData.requiredParts) ||
         orderData.requiredParts.length === 0
@@ -112,7 +115,6 @@ const createRepairOrder = async (req, res) => {
 
       createdRepairOrder = repairOrders[0];
 
-      // Save stock reservations against this specific repair order.
       for (const item of reservedItems) {
         item.inventory.reservations.push({
           repairOrder: createdRepairOrder._id,
@@ -166,7 +168,9 @@ const createRepairOrder = async (req, res) => {
 
 const getAllRepairOrders = async (req, res) => {
   try {
-    let filter = {};
+    const filter = {
+      dealership: req.user.dealership,
+    };
 
     if (req.user.role === "Technician") {
       if (!req.user.technician) {
@@ -176,10 +180,7 @@ const getAllRepairOrders = async (req, res) => {
         });
       }
 
-      filter = {
-        assignedTechnician: req.user.technician,
-        dealership: req.user.dealership,
-      };
+      filter.assignedTechnician = req.user.technician;
     }
 
     const repairOrders = await RepairOrder.find(filter)
@@ -204,7 +205,10 @@ const getAllRepairOrders = async (req, res) => {
 
 const getRepairOrderById = async (req, res) => {
   try {
-    let filter = { _id: req.params.id };
+    const filter = {
+      _id: req.params.id,
+      dealership: req.user.dealership,
+    };
 
     if (req.user.role === "Technician") {
       if (!req.user.technician) {
@@ -215,7 +219,6 @@ const getRepairOrderById = async (req, res) => {
       }
 
       filter.assignedTechnician = req.user.technician;
-      filter.dealership = req.user.dealership;
     }
 
     const repairOrder = await RepairOrder.findOne(filter)
@@ -245,10 +248,22 @@ const getRepairOrderById = async (req, res) => {
 
 const updateRepairOrder = async (req, res) => {
   try {
-    const repairOrder = await RepairOrder.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
+    const updateData = { ...req.body };
+
+    // Prevent changing the repair order's dealership or ID.
+    delete updateData.dealership;
+    delete updateData._id;
+
+    const repairOrder = await RepairOrder.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        dealership: req.user.dealership,
+      },
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!repairOrder) {

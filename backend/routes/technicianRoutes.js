@@ -17,11 +17,12 @@ const router = express.Router();
 
 router.post("/", protect, authorize("Manager"), createTechnician);
 
-router.get("/", protect, getAllTechnicians);
+router.get("/", protect, authorize("Manager"), getAllTechnicians);
 
 router.get(
   "/dealership/:dealershipId",
   protect,
+  authorize("Manager"),
   getTechniciansByDealership
 );
 

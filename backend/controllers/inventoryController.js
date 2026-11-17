@@ -1,10 +1,13 @@
 
 const Inventory = require("../models/Inventory");
 
-// Add inventory to a dealership
+// Add inventory to the logged-in user's dealership
 const createInventory = async (req, res) => {
   try {
-    const inventory = await Inventory.create(req.body);
+    const inventory = await Inventory.create({
+      ...req.body,
+      dealership: req.user.dealership,
+    });
 
     res.status(201).json({
       success: true,
@@ -19,10 +22,12 @@ const createInventory = async (req, res) => {
   }
 };
 
-// Get all dealership inventory
+// Get inventory for the logged-in user's dealership
 const getAllInventory = async (req, res) => {
   try {
-    const inventory = await Inventory.find()
+    const inventory = await Inventory.find({
+      dealership: req.user.dealership,
+    })
       .populate("dealership", "name dealershipCode")
       .populate("part", "partNumber name category unitPrice");
 
@@ -42,8 +47,18 @@ const getAllInventory = async (req, res) => {
 // Get inventory for a particular dealership
 const getInventoryByDealership = async (req, res) => {
   try {
+    if (
+      String(req.params.dealershipId) !==
+      String(req.user.dealership)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied to this dealership's inventory.",
+      });
+    }
+
     const inventory = await Inventory.find({
-      dealership: req.params.dealershipId,
+      dealership: req.user.dealership,
     })
       .populate("dealership", "name dealershipCode")
       .populate("part", "partNumber name category unitPrice");
@@ -61,22 +76,33 @@ const getInventoryByDealership = async (req, res) => {
   }
 };
 
-// Update inventory quantity
+// Update inventory belonging to the logged-in user's dealership
 const updateInventory = async (req, res) => {
   try {
-    const inventory = await Inventory.findByIdAndUpdate(
-      req.params.id,
+    const updateData = { ...req.body };
+
+    delete updateData.dealership;
+    delete updateData._id;
+
+    const inventory = await Inventory.findOneAndUpdate(
       {
-        ...req.body,
+        _id: req.params.id,
+        dealership: req.user.dealership,
+      },
+      {
+        ...updateData,
         lastStockUpdate: new Date(),
       },
-      { new: true, runValidators: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     );
 
     if (!inventory) {
       return res.status(404).json({
         success: false,
-        message: "Inventory record not found",
+        message: "Inventory record not found.",
       });
     }
 

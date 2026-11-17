@@ -330,7 +330,7 @@ export default function TechnicianDashboard() {
                             key={item._id || index}
                             className="rounded-md bg-dark-700 px-3 py-1.5 text-xs text-gray-300"
                           >
-                            {item.part?.name || item.part?.partName || 'Part'} · Qty: {item.quantity}
+                            {item.part?.name || item.part?.partName || 'Part'} · Qty: {item.requiredQuantity}
                           </span>
                         ))}
                       </div>

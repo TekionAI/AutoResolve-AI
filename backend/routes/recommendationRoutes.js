@@ -4,12 +4,18 @@ const {
   generateSourcingRecommendations,
   getAllRecommendations,
 } = require("../controllers/recommendationController");
+
 const protect = require("../middleware/authMiddleware");
 const authorize = require("../middleware/roleMiddleware");
+
 const router = express.Router();
 
-
-router.get("/", protect, getAllRecommendations);
+router.get(
+  "/",
+  protect,
+  authorize("Manager", "Service Advisor"),
+  getAllRecommendations
+);
 
 router.post(
   "/generate/:repairOrderId",
@@ -17,4 +23,5 @@ router.post(
   authorize("Manager", "Service Advisor"),
   generateSourcingRecommendations
 );
+
 module.exports = router;

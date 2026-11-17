@@ -9,13 +9,16 @@ const {
   getDealershipById,
 } = require("../controllers/dealershipController");
 
-// Create a dealership
-router.post("/", createDealership);
+const protect = require("../middleware/authMiddleware");
+const authorize = require("../middleware/roleMiddleware");
 
-// Get all dealerships
-router.get("/", getAllDealerships);
+// Manager-only dealership creation
+router.post("/", protect, authorize("Manager"), createDealership);
 
-// Get a dealership by ID
-router.get("/:id", getDealershipById);
+// Authenticated users can view dealerships
+router.get("/", protect, getAllDealerships);
+
+// Authenticated users can view a dealership by ID
+router.get("/:id", protect, getDealershipById);
 
 module.exports = router;

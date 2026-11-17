@@ -1,10 +1,37 @@
 
+const mongoose = require("mongoose");
 const Vendor = require("../models/Vendor");
 
 // Create vendor
 const createVendor = async (req, res) => {
   try {
-    const vendor = await Vendor.create(req.body);
+    const {
+      vendorCode,
+      name,
+      contactPerson,
+      contactNumber,
+      email,
+      address,
+      averageDeliveryTime,
+      reliabilityScore,
+    } = req.body;
+
+    const vendor = await Vendor.create({
+      vendorCode,
+      name,
+      contactPerson,
+      contactNumber,
+      email,
+      address: address
+        ? {
+            city: address.city,
+            state: address.state,
+            fullAddress: address.fullAddress,
+          }
+        : undefined,
+      averageDeliveryTime,
+      reliabilityScore,
+    });
 
     res.status(201).json({
       success: true,
@@ -19,7 +46,7 @@ const createVendor = async (req, res) => {
   }
 };
 
-// Get all vendors
+// Get all active vendors
 const getAllVendors = async (req, res) => {
   try {
     const vendors = await Vendor.find({ isActive: true });
@@ -37,10 +64,20 @@ const getAllVendors = async (req, res) => {
   }
 };
 
-// Get vendor by ID
+// Get active vendor by ID
 const getVendorById = async (req, res) => {
   try {
-    const vendor = await Vendor.findById(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid vendor ID",
+      });
+    }
+
+    const vendor = await Vendor.findOne({
+      _id: req.params.id,
+      isActive: true,
+    });
 
     if (!vendor) {
       return res.status(404).json({
@@ -54,7 +91,7 @@ const getVendorById = async (req, res) => {
       data: vendor,
     });
   } catch (error) {
-    res.status(400).json({
+    res.status(500).json({
       success: false,
       message: error.message,
     });

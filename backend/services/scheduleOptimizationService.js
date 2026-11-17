@@ -1,3 +1,4 @@
+
 const RepairOrder = require("../models/RepairOrder");
 const Schedule = require("../models/Schedule");
 const { findBestSchedule } = require("./schedulingService");
@@ -13,8 +14,7 @@ const getReadyRepairOrders = async (dealershipId) => {
   return RepairOrder.find({
     dealership: dealershipId,
     status: "Ready for Service",
-  })
-    .populate("requiredParts.part");
+  }).populate("requiredParts.part");
 };
 
 const getBlockedRepairOrders = async (dealershipId) => {
@@ -27,7 +27,6 @@ const getBlockedRepairOrders = async (dealershipId) => {
 
 const generateReschedulingOptions = async (dealershipId) => {
   const blockedOrders = await getBlockedRepairOrders(dealershipId);
-
   const readyOrders = await getReadyRepairOrders(dealershipId);
 
   readyOrders.sort(
@@ -47,7 +46,8 @@ const generateReschedulingOptions = async (dealershipId) => {
 
       const existingSchedule = await Schedule.findOne({
         repairOrder: readyOrder._id,
-        status: { $in: ["Scheduled", "In Progress"] },
+        dealership: dealershipId,
+        status: { $in: ["Scheduled", "In Progress", "Delayed"] },
       });
 
       if (existingSchedule) {
