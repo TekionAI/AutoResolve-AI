@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import useAutoRefresh, { notifyDataChanged } from '../hooks/useAutoRefresh';
 import {
   CalendarClock,
   Zap,
@@ -18,6 +19,7 @@ import { scheduleService } from '../services/scheduleService';
 import { recommendationService } from '../services/recommendationService';
 import { repairOrderService } from '../services/repairOrderService';
 import Loading from '../components/common/Loading';
+
 
 const DEALERSHIP_ID = '6af9e85fa9791b0ffed2cabf';
 
@@ -67,8 +69,10 @@ export default function Scheduling() {
     repairOrders.map((ro) => [ro._id, ro])
   );
 
-  const loadData = async () => {
+  const loadData = async (showLoading = false) => {
+  if (showLoading) {
     setLoading(true);
+  }
 
     try {
       const [scheduleRes, recommendationRes, repairOrderRes] =
@@ -95,13 +99,17 @@ export default function Scheduling() {
         error.response?.data?.message || 'Unable to load scheduling data'
       );
     } finally {
-      setLoading(false);
+      if (showLoading) {
+  setLoading(false);
+}
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+  loadData(true);
+}, []);
+
+useAutoRefresh(loadData);
 
   const runOptimization = async () => {
     setOptimizing(true);
@@ -163,8 +171,9 @@ export default function Scheduling() {
 
     try {
       await scheduleService.applyRecommendation(id);
-      toast.success('Schedule applied successfully');
-      await loadData();
+toast.success('Schedule applied successfully');
+await loadData();
+notifyDataChanged();
     } catch (error) {
       toast.error(
         error.response?.data?.message || 'Unable to apply recommendation'

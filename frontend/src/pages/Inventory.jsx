@@ -6,6 +6,7 @@ import StatusBadge from '../components/common/StatusBadge';
 import Loading from '../components/common/Loading';
 import { Package, AlertTriangle, Boxes, RefreshCw, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 const getArray = (response) => {
   const value = response?.data;
@@ -50,11 +51,10 @@ export default function Inventory() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   
-  const loadInventory = async (refresh = false) => {
+  const loadInventory = async (refresh = false, showLoading = false) => {
     try {
-      if (refresh) setRefreshing(true);
-      else setLoading(true);
-
+     if (refresh) setRefreshing(true);
+if (showLoading) setLoading(true);
       const res = await inventoryService.getInventory();
       setData(getArray(res));
     } catch (error) {
@@ -63,14 +63,16 @@ export default function Inventory() {
         error.response?.data?.message || 'Failed to load inventory'
       );
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (showLoading) setLoading(false);
+setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadInventory();
-  }, []);
+  loadInventory(false, true);
+}, []);
+
+useAutoRefresh(loadInventory);
 
   const totalStock = data.reduce(
     (sum, row) => sum + Number(row.quantity || 0), 0

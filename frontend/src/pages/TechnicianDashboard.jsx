@@ -14,6 +14,7 @@ import {
 
 import { technicianService } from '../services/technicianService';
 import Loading from '../components/common/Loading';
+import useAutoRefresh, { notifyDataChanged } from '../hooks/useAutoRefresh';
 
 const formatDate = (date) => {
   if (!date) return 'Not scheduled';
@@ -43,13 +44,15 @@ export default function TechnicianDashboard() {
   const [actionLoading, setActionLoading] = useState('');
   const [error, setError] = useState('');
 
-  const fetchDashboard = useCallback(async (showRefresh = false) => {
-    try {
-      if (showRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+  const fetchDashboard = useCallback(async (showRefresh = false, showLoading = false) => {
+  try {
+    if (showRefresh) {
+      setRefreshing(true);
+    }
+
+    if (showLoading) {
+      setLoading(true);
+    }
 
       setError('');
 
@@ -67,8 +70,10 @@ export default function TechnicianDashboard() {
   }, []);
 
   useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+  fetchDashboard(false, true);
+}, [fetchDashboard]);
+
+useAutoRefresh(fetchDashboard);
 
   const handleJobAction = async (repairOrderId, action) => {
     const actionKey = `${repairOrderId}-${action}`;
@@ -83,7 +88,8 @@ export default function TechnicianDashboard() {
         await technicianService.completeJob(repairOrderId);
       }
 
-      await fetchDashboard(true);
+     await fetchDashboard(true);
+notifyDataChanged();
     } catch (err) {
       setError(
         err.response?.data?.message ||

@@ -4,6 +4,8 @@ import { repairOrderService } from '../services/repairOrderService';
 import { scheduleService } from '../services/scheduleService';
 import StatCard from '../components/common/StatCard';
 import Loading from '../components/common/Loading';
+import useAutoRefresh from '../hooks/useAutoRefresh';
+
 import {
   RefreshCw,
   AlertTriangle,
@@ -99,8 +101,10 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+  fetchDashboardData();
+}, [fetchDashboardData]);
+
+useAutoRefresh(fetchDashboardData);
 
   if (loading) return <Loading />;
 

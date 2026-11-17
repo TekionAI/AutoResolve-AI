@@ -20,6 +20,8 @@ import { recommendationService } from '../services/recommendationService';
 import { repairOrderService } from '../services/repairOrderService';
 import Loading from '../components/common/Loading';
 
+import useAutoRefresh, { notifyDataChanged } from '../hooks/useAutoRefresh';
+
 const extractData = (response) => {
   return response?.data?.data ?? response?.data ?? [];
 };
@@ -53,9 +55,10 @@ export default function AIDecisionCentre() {
   };
 
   useEffect(() => {
-    fetchRepairOrders();
-  }, []);
+  fetchRepairOrders();
+}, []);
 
+useAutoRefresh(fetchRepairOrders);
   const generateRecommendations = async (e) => {
     e.preventDefault();
 
@@ -150,6 +153,8 @@ export default function AIDecisionCentre() {
       );
 
       await fetchRepairOrders();
+      notifyDataChanged();
+
     } catch (err) {
       console.error(err);
 
