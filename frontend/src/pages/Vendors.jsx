@@ -4,6 +4,8 @@ import api from '../services/api';
 import DataTable from '../components/common/DataTable';
 import Loading from '../components/common/Loading';
 import StatusBadge from '../components/common/StatusBadge';
+import useAutoRefresh from '../hooks/useAutoRefresh';
+
 import {
   Truck,
   Package,
@@ -68,6 +70,7 @@ export default function Vendors() {
   useEffect(() => {
     loadData();
   }, []);
+  useAutoRefresh(loadData);
 
   const getVendorId = (item) => {
     return typeof item.vendor === 'object'

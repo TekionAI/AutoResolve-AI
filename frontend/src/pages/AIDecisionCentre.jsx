@@ -281,6 +281,37 @@ export default function AIDecisionCentre() {
         const status = rec.status || 'Pending';
 
         const sourcingOptions = rec.sourcingOptions || [];
+        const proposedSources = rec.proposedSources || [];
+
+const totalAllocated = proposedSources.reduce(
+  (total, source) => total + Number(source.quantity || 0),
+  0
+);
+
+const combinedCost = proposedSources.reduce(
+  (total, source) =>
+    total +
+    Number(
+      source.estimatedCost ??
+      (Number(source.unitPrice || 0) * Number(source.quantity || 0))
+    ),
+  0
+);
+
+const remainingShortage = Math.max(
+  0,
+  Number(rec.shortageDetails?.requiredQuantity || 0) - totalAllocated
+);
+
+const combinedDelivery = proposedSources.length
+  ? Math.max(
+      ...proposedSources.map(source =>
+        Number(source.estimatedDeliveryHours || 0)
+      )
+    )
+  : 0;
+
+const isFullyFulfilled = remainingShortage === 0;
 
         const bestSource = sourcingOptions.length
           ? [...sourcingOptions].sort((a, b) => b.score - a.score)[0]
@@ -352,6 +383,101 @@ export default function AIDecisionCentre() {
                   </div>
                 )}
               </div>
+             
+{/* Combined Sourcing Plan */}
+<div className="rounded-xl border border-dark-700 bg-dark-900/70 p-5">
+  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h3 className="font-semibold text-white">
+        Combined Sourcing Plan
+      </h3>
+      <p className="mt-1 text-xs text-slate-400">
+        Stock allocated across multiple sources
+      </p>
+    </div>
+
+    <span
+      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+        isFullyFulfilled
+          ? 'bg-emerald-500/10 text-emerald-400'
+          : 'bg-amber-500/10 text-amber-400'
+      }`}
+    >
+      {isFullyFulfilled ? 'Fully Fulfillable' : 'Partially Fulfillable'}
+    </span>
+  </div>
+
+  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+    <div className="rounded-lg bg-dark-800 p-3">
+      <p className="text-xs text-slate-400">Required</p>
+      <p className="mt-1 text-xl font-bold text-white">
+        {rec.shortageDetails?.requiredQuantity ?? 0}
+      </p>
+    </div>
+
+    <div className="rounded-lg bg-dark-800 p-3">
+      <p className="text-xs text-slate-400">Allocated</p>
+      <p className="mt-1 text-xl font-bold text-emerald-400">
+        {totalAllocated}
+      </p>
+    </div>
+
+    <div className="rounded-lg bg-dark-800 p-3">
+      <p className="text-xs text-slate-400">Remaining Shortage</p>
+      <p className="mt-1 text-xl font-bold text-amber-400">
+        {remainingShortage}
+      </p>
+    </div>
+
+    <div className="rounded-lg bg-dark-800 p-3">
+      <p className="text-xs text-slate-400">Combined Cost</p>
+      <p className="mt-1 text-xl font-bold text-white">
+        ₹{combinedCost.toLocaleString('en-IN')}
+      </p>
+    </div>
+  </div>
+
+  {proposedSources.length > 0 ? (
+    <div className="mt-4 space-y-3">
+      {proposedSources.map((source, sourceIndex) => (
+        <div
+          key={`${source.sourceType}-${source.dealership?._id || source.vendor?._id || sourceIndex}`}
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dark-700 bg-dark-800 p-3"
+        >
+          <div>
+            <p className="text-sm font-semibold text-white">
+              {source.sourceName ||
+                source.dealership?.name ||
+                source.vendor?.name ||
+                'Sourcing partner'}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              {source.sourceType} · {source.location}
+            </p>
+          </div>
+
+          <div className="text-right">
+            <p className="text-sm font-bold text-emerald-400">
+              {source.quantity} units
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              ₹{Number(source.estimatedCost || 0).toLocaleString('en-IN')}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <p className="mt-4 text-sm text-slate-400">
+      No external stock is currently available for allocation.
+    </p>
+  )}
+
+  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dark-700 pt-3 text-sm text-slate-300">
+    <Clock size={15} className="text-slate-400" />
+    Estimated combined delivery: {combinedDelivery} hrs
+  </div>
+</div>
 
               {/* Sourcing Options */}
               <div>
@@ -463,45 +589,7 @@ export default function AIDecisionCentre() {
                 )}
               </div>
 
-              {/* Shortage Summary */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-
-                <div className="rounded-xl border border-dark-700 bg-dark-900/70 p-4 transition-colors hover:border-dark-500">
-                  <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
-                    <Package size={17} />
-                    Required Quantity
-                  </div>
-
-                  <p className="text-2xl font-bold text-white">
-                    {rec.shortageDetails?.requiredQuantity ?? 0}
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-dark-700 bg-dark-900/70 p-4 transition-colors hover:border-dark-500">
-                  <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
-                    <Truck size={17} />
-                    Recommended Delivery
-                  </div>
-
-                  <p className="text-2xl font-bold text-white">
-                    {rec.proposedSource?.estimatedDeliveryHours ?? 0} hrs
-                  </p>
-                </div>
-
-                <div className="rounded-xl border border-dark-700 bg-dark-900/70 p-4 transition-colors hover:border-dark-500">
-                  <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
-                    <IndianRupee size={17} />
-                    Recommended Total Cost
-                  </div>
-
-                  <p className="text-2xl font-bold text-white">
-                    ₹{Number(
-                      rec.proposedSource?.estimatedCost ?? 0
-                    ).toLocaleString('en-IN')}
-                  </p>
-                </div>
-
-              </div>
+              
 
               {/* Manager Actions */}
               {id && (

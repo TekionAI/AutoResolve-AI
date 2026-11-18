@@ -24,99 +24,170 @@ const applyRecommendation = async (req, res) => {
       }
 
       if (recommendation.status !== "Approved") {
-        throw new Error(
-          "Only approved recommendations can be applied"
-        );
+        throw new Error("Only approved recommendations can be applied");
       }
 
       const repairOrder = await RepairOrder.findOne({
-  _id: recommendation.repairOrder,
-  dealership: req.user.dealership,
-}).session(session);
+        _id: recommendation.repairOrder,
+        dealership: req.user.dealership,
+      }).session(session);
 
-if (!repairOrder) {
-  throw new Error(
-    "Repair order not found or access denied"
-  );
-}
+      if (!repairOrder) {
+        throw new Error("Repair order not found or access denied");
+      }
 
       const partId = recommendation.shortageDetails.part;
       const dealershipId = repairOrder.dealership;
-      const quantity = Number(
-        recommendation.proposedSource.quantity
-      );
 
-      if (!Number.isInteger(quantity) || quantity <= 0) {
-        throw new Error("Invalid sourcing quantity");
+      if (!partId) {
+        throw new Error("Part not specified in recommendation");
       }
 
-      const source = recommendation.proposedSource;
+      // Support both new combined recommendations and older records.
+      const proposedSources =
+        recommendation.proposedSources?.length > 0
+          ? recommendation.proposedSources
+          : [recommendation.proposedSource];
 
-      // Step 1: Deduct stock from the selected source.
-      if (source.sourceType === "Sister Dealership") {
-        if (!source.dealership) {
+      if (!proposedSources.length || !proposedSources[0]) {
+        throw new Error("No sourcing allocation found");
+      }
+
+      // Validate allocations before changing any inventory.
+      const validatedSources = proposedSources.map((source) => {
+        const quantity = Number(source.quantity);
+
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+          throw new Error("Invalid sourcing quantity");
+        }
+
+        if (
+          source.sourceType !== "Sister Dealership" &&
+          source.sourceType !== "Vendor"
+        ) {
+          throw new Error("Unsupported sourcing type");
+        }
+
+        if (
+          source.sourceType === "Sister Dealership" &&
+          !source.dealership
+        ) {
           throw new Error("Sister dealership not specified");
         }
 
-        if (
-          source.dealership.toString() === dealershipId.toString()
-        ) {
-          throw new Error(
-            "Source and destination dealerships cannot be the same"
-          );
-        }
-
-        const sisterStock = await Inventory.findOne({
-          dealership: source.dealership,
-          part: partId,
-        }).session(session);
-
-        if (!sisterStock) {
-          throw new Error("Sister dealership inventory not found");
-        }
-
-        const availableQuantity =
-          sisterStock.quantity - sisterStock.reservedQuantity;
-
-        if (availableQuantity < quantity) {
-          throw new Error("Insufficient sister dealership stock");
-        }
-
-        sisterStock.quantity -= quantity;
-        sisterStock.lastStockUpdate = new Date();
-
-        await sisterStock.save({ session });
-      } else if (source.sourceType === "Vendor") {
-        if (!source.vendor) {
+        if (source.sourceType === "Vendor" && !source.vendor) {
           throw new Error("Vendor not specified");
         }
 
-        const vendorStock = await VendorInventory.findOne({
-          vendor: source.vendor,
-          part: partId,
-          isAvailable: true,
-        }).session(session);
+        return { source, quantity };
+      });
 
-        if (
-          !vendorStock ||
-          vendorStock.availableQuantity < quantity
-        ) {
-          throw new Error("Insufficient vendor stock");
-        }
+      // Prevent duplicate allocations against the same stock record.
+      const sourceKeys = validatedSources.map(({ source }) => {
+        const sourceId =
+          source.sourceType === "Sister Dealership"
+            ? source.dealership
+            : source.vendor;
 
-        vendorStock.availableQuantity -= quantity;
-        vendorStock.lastUpdated = new Date();
+        return `${source.sourceType}:${sourceId.toString()}`;
+      });
 
-        if (vendorStock.availableQuantity === 0) {
-          vendorStock.isAvailable = false;
-        }
-
-        await vendorStock.save({ session });
-      } else {
-        throw new Error("Unsupported sourcing type");
+      if (new Set(sourceKeys).size !== sourceKeys.length) {
+        throw new Error("Duplicate sourcing allocation detected");
       }
 
-      // Step 2: Add the received stock to the destination dealership.
+      const totalPlannedQuantity = validatedSources.reduce(
+        (total, item) => total + item.quantity,
+        0
+      );
+
+      const shortageQuantity = Number(
+        recommendation.shortageDetails.requiredQuantity
+      );
+
+      if (
+        !Number.isInteger(shortageQuantity) ||
+        shortageQuantity <= 0
+      ) {
+        throw new Error("Invalid required shortage quantity");
+      }
+
+      if (totalPlannedQuantity > shortageQuantity) {
+        throw new Error("Sourcing allocation exceeds the required shortage");
+      }
+
+      // Step 1: Deduct stock from every allocated source.
+      const sourceBreakdown = [];
+      let transferredQuantity = 0;
+
+      for (const { source, quantity } of validatedSources) {
+        if (source.sourceType === "Sister Dealership") {
+          if (
+            source.dealership.toString() === dealershipId.toString()
+          ) {
+            throw new Error(
+              "Source and destination dealerships cannot be the same"
+            );
+          }
+
+          const sisterStock = await Inventory.findOne({
+            dealership: source.dealership,
+            part: partId,
+          }).session(session);
+
+          if (!sisterStock) {
+            throw new Error("Sister dealership inventory not found");
+          }
+
+          const availableQuantity =
+            sisterStock.quantity - sisterStock.reservedQuantity;
+
+          if (availableQuantity < quantity) {
+            throw new Error(
+              `Insufficient stock at ${source.sourceName || "sister dealership"}`
+            );
+          }
+
+          sisterStock.quantity -= quantity;
+          sisterStock.lastStockUpdate = new Date();
+
+          await sisterStock.save({ session });
+        } else {
+          const vendorStock = await VendorInventory.findOne({
+            vendor: source.vendor,
+            part: partId,
+            isAvailable: true,
+          }).session(session);
+
+          if (
+            !vendorStock ||
+            vendorStock.availableQuantity < quantity
+          ) {
+            throw new Error(
+              `Insufficient stock at ${source.sourceName || "vendor"}`
+            );
+          }
+
+          vendorStock.availableQuantity -= quantity;
+          vendorStock.lastUpdated = new Date();
+
+          if (vendorStock.availableQuantity === 0) {
+            vendorStock.isAvailable = false;
+          }
+
+          await vendorStock.save({ session });
+        }
+
+        transferredQuantity += quantity;
+
+        sourceBreakdown.push({
+          sourceType: source.sourceType,
+          sourceName: source.sourceName || "",
+          quantity,
+        });
+      }
+
+      // Step 2: Add the combined transferred stock to the destination.
       let destinationStock = await Inventory.findOne({
         dealership: dealershipId,
         part: partId,
@@ -133,10 +204,10 @@ if (!repairOrder) {
         });
       }
 
-      destinationStock.quantity += quantity;
+      destinationStock.quantity += transferredQuantity;
       destinationStock.lastStockUpdate = new Date();
 
-      // Step 3: Calculate how much this repair order still needs.
+      // Step 3: Calculate the quantity this repair order still requires.
       const requiredQuantity = repairOrder.requiredParts
         .filter(
           (item) => item.part.toString() === partId.toString()
@@ -155,28 +226,33 @@ if (!repairOrder) {
       const existingReservation = destinationStock.reservations
         .filter(
           (item) =>
-            item.repairOrder.toString() ===
-            repairOrder._id.toString()
+            item.repairOrder.toString() === repairOrder._id.toString()
         )
         .reduce(
           (total, item) => total + item.quantity,
           0
         );
 
-      const remainingRequired =
-        Math.max(0, requiredQuantity - existingReservation);
-
-      // Reserve only the quantity this repair order still needs.
-      const quantityToReserve = Math.min(
-        quantity,
-        remainingRequired
+      const remainingRequired = Math.max(
+        0,
+        requiredQuantity - existingReservation
       );
 
+
+      // Include both existing unreserved stock and newly transferred stock.
+const availableToReserve = Math.max(
+  0,
+  destinationStock.quantity - destinationStock.reservedQuantity
+);
+
+const quantityToReserve = Math.min(
+  remainingRequired,
+  availableToReserve
+);
       if (quantityToReserve > 0) {
         const reservation = destinationStock.reservations.find(
           (item) =>
-            item.repairOrder.toString() ===
-            repairOrder._id.toString()
+            item.repairOrder.toString() === repairOrder._id.toString()
         );
 
         if (reservation) {
@@ -193,15 +269,14 @@ if (!repairOrder) {
 
       await destinationStock.save({ session });
 
-      // Step 4: Check every required part for this repair order.
+      // Step 4: Check whether every required part is fully reserved.
       let allPartsReserved = true;
 
       for (const requiredPart of repairOrder.requiredParts) {
         const requiredPartQuantity = repairOrder.requiredParts
           .filter(
             (item) =>
-              item.part.toString() ===
-              requiredPart.part.toString()
+              item.part.toString() === requiredPart.part.toString()
           )
           .reduce(
             (total, item) => total + item.requiredQuantity,
@@ -232,7 +307,7 @@ if (!repairOrder) {
         }
       }
 
-      // Step 5: Unblock only when every required part is reserved.
+      // Step 5: Unblock only when all required parts are reserved.
       const wasBlocked = repairOrder.isBlocked;
 
       if (allPartsReserved) {
@@ -275,16 +350,21 @@ if (!repairOrder) {
         }
       }
 
-      // Step 7: Mark recommendation as applied.
+      // Step 7: Mark the recommendation as applied.
       recommendation.status = "Applied";
       await recommendation.save({ session });
 
       result = {
         recommendationId: recommendation._id,
         repairOrderNumber: repairOrder.roNumber,
-        transferredQuantity: quantity,
-        reservedQuantity: quantityToReserve,
         partId,
+        sourceBreakdown,
+        transferredQuantity,
+        reservedQuantity: quantityToReserve,
+        remainingShortage: Math.max(
+          0,
+          requiredQuantity - existingReservation - quantityToReserve
+        ),
         allPartsReserved,
         repairOrderStatus: repairOrder.status,
         recommendationStatus: recommendation.status,

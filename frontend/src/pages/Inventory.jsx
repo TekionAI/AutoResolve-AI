@@ -40,8 +40,10 @@ const getPartNumber = (row) => {
 };
 
 const getAvailable = (row) =>
-  Math.max(0, Number(row.quantity || 0) - Number(row.reserved || 0));
-
+  Math.max(
+    0,
+    Number(row.quantity || 0) - Number(row.reservedQuantity || 0)
+  );
 const getStockStatus = (row) => {
   const available = getAvailable(row);
 
@@ -86,8 +88,8 @@ export default function Inventory() {
   );
 
   const totalReserved = data.reduce(
-    (sum, row) => sum + Number(row.reserved || 0), 0
-  );
+  (sum, row) => sum + Number(row.reservedQuantity || 0), 0
+);
 
   const totalAvailable = data.reduce(
     (sum, row) => sum + getAvailable(row), 0
@@ -177,7 +179,7 @@ export default function Inventory() {
       accessor: 'reserved',
       render: row => (
         <span className="font-medium text-yellow-400">
-          {Number(row.reserved || 0)}
+          {Number(row.reservedQuantity || 0)}
         </span>
       )
     },

@@ -4,6 +4,8 @@ import api from '../services/api';
 import DataTable from '../components/common/DataTable';
 import Loading from '../components/common/Loading';
 import StatusBadge from '../components/common/StatusBadge';
+import useAutoRefresh from '../hooks/useAutoRefresh';
+
 import {
   Package,
   Search,
@@ -54,7 +56,7 @@ export default function Parts() {
 
       const [partsRes, inventoryRes] = await Promise.all([
         api.get('/parts'),
-        api.get('/inventory')
+       api.get('/inventory/network')
       ]);
 
       setParts(getArray(partsRes));
@@ -73,6 +75,7 @@ export default function Parts() {
   useEffect(() => {
     loadParts();
   }, []);
+  useAutoRefresh(loadParts);
 
   const categories = useMemo(() => {
     return [

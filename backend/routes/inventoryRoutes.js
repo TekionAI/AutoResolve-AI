@@ -1,11 +1,10 @@
-
 const express = require("express");
-
 const router = express.Router();
 
 const {
   createInventory,
   getAllInventory,
+  getNetworkInventory,
   getInventoryByDealership,
   updateInventory,
 } = require("../controllers/inventoryController");
@@ -15,19 +14,11 @@ const authorize = require("../middleware/roleMiddleware");
 
 router.post("/", protect, authorize("Manager"), createInventory);
 
-router.get(
-  "/",
-  protect,
-  authorize("Manager", "Service Advisor"),
-  getAllInventory
-);
+router.get("/network", protect, authorize("Manager"), getNetworkInventory);
 
-router.get(
-  "/dealership/:dealershipId",
-  protect,
-  authorize("Manager", "Service Advisor"),
-  getInventoryByDealership
-);
+router.get("/", protect, authorize("Manager", "Service Advisor"), getAllInventory);
+
+router.get("/dealership/:dealershipId", protect, authorize("Manager", "Service Advisor"), getInventoryByDealership);
 
 router.put("/:id", protect, authorize("Manager"), updateInventory);
 

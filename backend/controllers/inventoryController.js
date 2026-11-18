@@ -43,6 +43,25 @@ const getAllInventory = async (req, res) => {
     });
   }
 };
+// Get network-wide inventory for Managers
+const getNetworkInventory = async (req, res) => {
+  try {
+    const inventory = await Inventory.find({})
+      .populate("dealership", "name dealershipCode")
+      .populate("part", "partNumber name category unitPrice");
+
+    res.status(200).json({
+      success: true,
+      count: inventory.length,
+      data: inventory,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
 // Get inventory for a particular dealership
 const getInventoryByDealership = async (req, res) => {
@@ -122,6 +141,7 @@ const updateInventory = async (req, res) => {
 module.exports = {
   createInventory,
   getAllInventory,
+  getNetworkInventory,
   getInventoryByDealership,
   updateInventory,
 };

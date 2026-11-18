@@ -1,3 +1,4 @@
+
 const RepairOrder = require("../models/RepairOrder");
 const Inventory = require("../models/Inventory");
 const Recommendation = require("../models/Recommendation");
@@ -6,9 +7,9 @@ const { findSourceOptions } = require("../services/sourcingService");
 const generateSourcingRecommendations = async (req, res) => {
   try {
     const repairOrder = await RepairOrder.findOne({
-  _id: req.params.repairOrderId,
-  dealership: req.user.dealership,
-}).populate("requiredParts.part");
+      _id: req.params.repairOrderId,
+      dealership: req.user.dealership,
+    }).populate("requiredParts.part");
 
     if (!repairOrder) {
       return res.status(404).json({
@@ -29,16 +30,31 @@ const generateSourcingRecommendations = async (req, res) => {
       });
 
       const localAvailableQuantity = localStock
-        ? Math.max(
-            0,
-            localStock.quantity - localStock.reservedQuantity
-          )
-        : 0;
+  ? Math.max(
+      0,
+      localStock.quantity - localStock.reservedQuantity
+    )
+  : 0;
 
-      const shortageQuantity = Math.max(
-        0,
-        requiredQuantity - localAvailableQuantity
-      );
+const alreadyReservedQuantity = localStock
+  ? localStock.reservations
+      .filter(
+        (reservation) =>
+          reservation.repairOrder.toString() ===
+          repairOrder._id.toString()
+      )
+      .reduce(
+        (total, reservation) => total + reservation.quantity,
+        0
+      )
+  : 0;
+
+const shortageQuantity = Math.max(
+  0,
+  requiredQuantity -
+    alreadyReservedQuantity -
+    localAvailableQuantity
+);
 
       if (shortageQuantity === 0) {
         continue;
@@ -50,98 +66,135 @@ const generateSourcingRecommendations = async (req, res) => {
         shortageQuantity
       );
 
-      const eligibleSources = sourcingResult.options
-        .filter((source) => source.canFulfilEntireQuantity)
-        .sort((a, b) => b.score - a.score);
+      const combinedPlan = sourcingResult.combinedPlan;
 
-      const bestSource = eligibleSources[0] || null;
+      const allocatedSources = combinedPlan.sources || [];
 
-      let proposedSource = {
-        sourceType: null,
-        dealership: null,
-        vendor: null,
-        quantity: 0,
-        estimatedDeliveryHours: null,
-        estimatedCost: null,
-      };
-
-      let explanation = "";
-
-      let estimatedCostSaved = 0;
-
-      if (bestSource) {
-        proposedSource = {
-          sourceType: bestSource.sourceType,
-          dealership:
-            bestSource.sourceType === "Sister Dealership"
-              ? bestSource.sourceId
-              : null,
-          vendor:
-            bestSource.sourceType === "Vendor"
-              ? bestSource.sourceId
-              : null,
-          quantity: shortageQuantity,
-          estimatedDeliveryHours:
-            bestSource.estimatedDeliveryHours,
-          estimatedCost:
-            bestSource.unitPrice * shortageQuantity,
-        };
-
-        estimatedCostSaved = Math.max(
-          0,
-          (part.unitPrice - bestSource.unitPrice) *
-            shortageQuantity
-        );
-
-        explanation =
-          `${bestSource.sourceName} is the highest-ranked eligible source. ` +
-          `It can supply all ${shortageQuantity} required units ` +
-          `within an estimated ${bestSource.estimatedDeliveryHours} hours. ` +
-          `Its ranking score is ${bestSource.score}.`;
-      } else {
-        explanation =
-          `A shortage of ${shortageQuantity} units exists, ` +
-          `but no single available source can fulfil the complete quantity. ` +
-          `Manual review or a combined sourcing plan is required.`;
-      }
-
-      const recommendationData = {
-        recommendationType: "Parts Sourcing",
-              sourcingOptions: sourcingResult.options.map((source) => ({
+      const proposedSources = allocatedSources.map((source) => ({
         sourceType: source.sourceType,
-
         dealership:
           source.sourceType === "Sister Dealership"
             ? source.sourceId
             : null,
-
         vendor:
           source.sourceType === "Vendor"
             ? source.sourceId
             : null,
-
         sourceName: source.sourceName,
         location: source.location,
-        availableQuantity: source.availableQuantity,
-        quantity: shortageQuantity,
+        quantity: source.allocatedQuantity,
         unitPrice: source.unitPrice,
         estimatedDeliveryHours: source.estimatedDeliveryHours,
-        reliabilityScore: source.reliabilityScore,
+        estimatedCost: source.estimatedCost,
         score: source.score,
-        canFulfilEntireQuantity: source.canFulfilEntireQuantity,
-      })),
+      }));
+
+      const bestSource = allocatedSources[0] || null;
+
+      const proposedSource = bestSource
+        ? {
+            sourceType: bestSource.sourceType,
+            dealership:
+              bestSource.sourceType === "Sister Dealership"
+                ? bestSource.sourceId
+                : null,
+            vendor:
+              bestSource.sourceType === "Vendor"
+                ? bestSource.sourceId
+                : null,
+            quantity: bestSource.allocatedQuantity,
+            estimatedDeliveryHours:
+              bestSource.estimatedDeliveryHours,
+            estimatedCost: bestSource.estimatedCost,
+          }
+        : {
+            sourceType: null,
+            dealership: null,
+            vendor: null,
+            quantity: 0,
+            estimatedDeliveryHours: null,
+            estimatedCost: null,
+          };
+
+      const estimatedCostSaved = Math.max(
+        0,
+        part.unitPrice * combinedPlan.totalAllocatedQuantity -
+          combinedPlan.totalCost
+      );
+
+      let explanation;
+
+      if (allocatedSources.length === 0) {
+        explanation =
+          `A shortage of ${shortageQuantity} units exists, ` +
+          `but no external stock is currently available.`;
+      } else {
+        const allocationDescription = proposedSources
+          .map(
+            (source) =>
+              `${source.sourceName} (${source.quantity} units)`
+          )
+          .join(", ");
+
+        if (combinedPlan.isFulfilled) {
+          explanation =
+            `The combined sourcing plan can fulfil all ${shortageQuantity} required units. ` +
+            `The recommended allocation is ${allocationDescription}. ` +
+            `The combined estimated cost is ₹${combinedPlan.totalCost.toLocaleString("en-IN")}, ` +
+            `with an estimated delivery time of ${combinedPlan.estimatedDeliveryHours} hours.`;
+        } else {
+          explanation =
+            `The combined sourcing plan can allocate ${combinedPlan.totalAllocatedQuantity} ` +
+            `of ${shortageQuantity} required units from ${allocationDescription}. ` +
+            `${combinedPlan.remainingQuantity} units will still remain unavailable. ` +
+            `The combined estimated cost is ₹${combinedPlan.totalCost.toLocaleString("en-IN")}.`;
+        }
+      }
+
+      const allocationMap = new Map(
+        allocatedSources.map((source) => [
+          `${source.sourceType}:${String(source.sourceId)}`,
+          source.allocatedQuantity,
+        ])
+      );
+
+      const recommendationData = {
+        recommendationType: "Parts Sourcing",
+
+        sourcingOptions: sourcingResult.options.map((source) => ({
+          sourceType: source.sourceType,
+          dealership:
+            source.sourceType === "Sister Dealership"
+              ? source.sourceId
+              : null,
+          vendor:
+            source.sourceType === "Vendor"
+              ? source.sourceId
+              : null,
+          sourceName: source.sourceName,
+          location: source.location,
+          availableQuantity: source.availableQuantity,
+          quantity:
+            allocationMap.get(
+              `${source.sourceType}:${String(source.sourceId)}`
+            ) || 0,
+          unitPrice: source.unitPrice,
+          estimatedDeliveryHours: source.estimatedDeliveryHours,
+          reliabilityScore: source.reliabilityScore,
+          score: source.score,
+          canFulfilEntireQuantity: source.canFulfilEntireQuantity,
+        })),
 
         shortageDetails: {
           part: part._id,
-          requiredQuantity,
+          requiredQuantity: shortageQuantity,
           availableQuantity: localAvailableQuantity,
         },
 
         proposedSource,
-
+        proposedSources,
         explanation,
         estimatedCostSaved,
-
         status: "Pending",
       };
 
@@ -187,7 +240,6 @@ const generateSourcingRecommendations = async (req, res) => {
   }
 };
 
-
 const getAllRecommendations = async (req, res) => {
   try {
     const repairOrders = await RepairOrder.find({
@@ -203,6 +255,8 @@ const getAllRecommendations = async (req, res) => {
       .populate("shortageDetails.part")
       .populate("proposedSource.dealership")
       .populate("proposedSource.vendor")
+      .populate("proposedSources.dealership")
+      .populate("proposedSources.vendor")
       .populate("proposedSchedule.technician")
       .populate("proposedSchedule.serviceBay")
       .populate("proposedSchedule.repairOrderToMoveForward")

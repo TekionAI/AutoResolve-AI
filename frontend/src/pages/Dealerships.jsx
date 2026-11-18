@@ -3,6 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import DataTable from '../components/common/DataTable';
 import Loading from '../components/common/Loading';
+import useAutoRefresh from '../hooks/useAutoRefresh';
+
 import {
   Building2,
   MapPin,
@@ -65,7 +67,7 @@ export default function Dealerships() {
 
       const [dealershipRes, inventoryRes] = await Promise.all([
         api.get('/dealerships'),
-        api.get('/inventory')
+        api.get('/inventory/network')
       ]);
 
       setDealerships(extractArray(dealershipRes));
@@ -86,7 +88,7 @@ export default function Dealerships() {
   useEffect(() => {
     loadData();
   }, []);
-
+useAutoRefresh(loadData);
   const filteredDealerships = useMemo(() => {
     const term = search.toLowerCase();
 

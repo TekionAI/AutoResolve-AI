@@ -57,7 +57,53 @@ const recommendationSchema = new mongoose.Schema(
         default: null,
       },
     },
-
+    proposedSources: [
+      {
+        sourceType: {
+          type: String,
+          enum: ["Sister Dealership", "Vendor"],
+          required: true,
+        },
+        dealership: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Dealership",
+          default: null,
+        },
+        vendor: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Vendor",
+          default: null,
+        },
+        sourceName: {
+          type: String,
+          default: "",
+        },
+        location: {
+          type: String,
+          default: "",
+        },
+        quantity: {
+          type: Number,
+          default: 0,
+        },
+        unitPrice: {
+          type: Number,
+          default: 0,
+        },
+        estimatedDeliveryHours: {
+          type: Number,
+          default: 0,
+        },
+        estimatedCost: {
+          type: Number,
+          default: 0,
+        },
+        score: {
+          type: Number,
+          default: 0,
+        },
+      },
+    ],
     sourcingOptions: [
       {
         sourceType: {
@@ -113,28 +159,31 @@ const recommendationSchema = new mongoose.Schema(
         },
       },
     ],
-
-    
-proposedSchedule: {
-  repairOrderToMoveForward: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "RepairOrder",
-    default: null,
-  },
-  proposedStart: { type: Date, default: null },
-  proposedEnd: { type: Date, default: null },
-  technician: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Technician",
-    default: null,
-  },
-  serviceBay: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "ServiceBay",
-    default: null,
-  },
-},
-
+    proposedSchedule: {
+      repairOrderToMoveForward: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RepairOrder",
+        default: null,
+      },
+      proposedStart: {
+        type: Date,
+        default: null,
+      },
+      proposedEnd: {
+        type: Date,
+        default: null,
+      },
+      technician: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Technician",
+        default: null,
+      },
+      serviceBay: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ServiceBay",
+        default: null,
+      },
+    },
     explanation: {
       type: String,
       required: true,
