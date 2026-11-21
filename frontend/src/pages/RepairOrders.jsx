@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { repairOrderService } from '../services/repairOrderService';
 import DataTable from '../components/common/DataTable';
 import StatusBadge from '../components/common/StatusBadge';
@@ -51,7 +51,7 @@ export default function RepairOrders() {
   const [search, setSearch] = useState('');
   const [form, setForm] = useState(initialForm);
 
-  const loadData = async (showLoading = false) => {
+  const loadData = useCallback(async (showLoading = false) => {
     try {
       if (showLoading) {
         setLoading(true);
@@ -85,12 +85,11 @@ export default function RepairOrders() {
         setLoading(false);
       }
     }
-  };
-
-  useEffect(() => {
-    loadData(true);
   }, [isTechnician]);
 
+  useEffect(() => {
+  loadData(true);
+}, [loadData]);
   useAutoRefresh(loadData);
 
   const updateField = (e) => {

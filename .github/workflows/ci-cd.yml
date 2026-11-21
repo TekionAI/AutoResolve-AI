@@ -1,0 +1,173 @@
+
+name: AutoResolveAI CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - ci-cd-setup
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+
+permissions:
+  contents: read
+
+jobs:
+  validate-and-test:
+    name: Build and Test Application
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 3. Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 4. Install backend dependencies
+      - name: Install Backend Dependencies
+        run: npm ci
+        working-directory: backend
+
+      # 5. Install frontend dependencies
+      - name: Install Frontend Dependencies
+        run: npm ci
+        working-directory: frontend
+
+      # 6. Install AI dependencies
+      - name: Install AI Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+        working-directory: ai-service
+
+      # 7. Validate backend syntax
+      - name: Validate Backend Syntax
+        run: node --check server.js
+        working-directory: backend
+
+      # 8. Validate Python syntax
+      - name: Validate AI Service Syntax
+        run: python -m py_compile main.py
+        working-directory: ai-service
+
+      # 9. Run frontend lint
+      - name: Run Frontend Lint
+        run: npm run lint
+        working-directory: frontend
+
+      # 10. Build frontend
+      - name: Build Frontend
+        run: npm run build
+        working-directory: frontend
+
+      # 11. Validate Docker Compose configuration
+      - name: Validate Docker Compose
+        run: docker compose config
+
+      # 12. Build all Docker images
+      - name: Build Docker Images
+        run: docker compose build
+
+      # 13. Start all containers
+      - name: Start Application Containers
+        run: docker compose up -d --wait --wait-timeout 180
+
+      # 14. Check backend health
+      - name: Check Backend Health
+        run: |
+          curl --fail --retry 10 --retry-delay 5 \
+            http://localhost:5000/api/health
+
+      # 15. Check AI service health
+      - name: Check AI Service Health
+        run: |
+          curl --fail --retry 10 --retry-delay 5 \
+            http://localhost:8000/
+
+      # 16. Check frontend health
+      - name: Check Frontend Health
+        run: |
+          curl --fail --retry 10 --retry-delay 5 \
+            http://localhost:8080/health
+
+      # 17. Check AI sourcing endpoint
+      - name: Test AI Sourcing Endpoint
+        run: |
+          curl --fail --request POST \
+            http://localhost:8000/api/v1/sourcing/rank \
+            --header "Content-Type: application/json" \
+            --data '{
+              "partUnitPrice": 2500,
+              "requiredQuantity": 5,
+              "options": [
+                {
+                  "sourceType": "dealership",
+                  "sourceId": "test-1",
+                  "sourceName": "Test Dealership",
+                  "location": "Pune",
+                  "availableQuantity": 10,
+                  "unitPrice": 2200,
+                  "estimatedDeliveryHours": 2,
+                  "reliabilityScore": 95
+                }
+              ]
+            }'
+
+      # 18. Display container status
+      - name: Container Status
+        if: always()
+        run: docker compose ps -a
+
+      # 19. Display logs if something fails
+      - name: Show Container Logs on Failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      # 20. Cleanup
+      - name: Stop Containers
+        if: always()
+        run: docker compose down --remove-orphans
+
+
+  deploy-to-render:
+    name: Deploy Application to Render
+    runs-on: ubuntu-latest
+
+    needs: validate-and-test
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy Frontend
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
+        run: |
+          curl --fail --silent --show-error "$RENDER_DEPLOY_HOOK"
+
+      - name: Deploy Backend
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_BACKEND_DEPLOY_HOOK }}
+        run: |
+          curl --fail --silent --show-error "$RENDER_DEPLOY_HOOK"
+
+      - name: Deploy AI Service
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_AI_DEPLOY_HOOK }}
+        run: |
+          curl --fail --silent --show-error "$RENDER_DEPLOY_HOOK"
